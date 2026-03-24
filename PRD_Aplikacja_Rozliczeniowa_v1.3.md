@@ -1,7 +1,7 @@
 # PRD — Aplikacja Rozliczeniowa dla Lekarzy
 
-**Wersja:** 1.3 — Draft
-**Data:** 2026-03-18
+**Wersja:** 1.4 — Draft
+**Data:** 2026-03-24
 **Status:** Do przeglądu
 
 ---
@@ -14,25 +14,25 @@ Projekt realizowany jest w dwóch etapach. Podział ten jest świadomą decyzją
 
 ### Etap 1 — MVP (obecny zakres dokumentu)
 
-**Co robimy:** Wgrywamy do aplikacji dane już obliczone — podsumowanie rozliczenia oraz listę wizyt. Wszystkie złożone obliczenia (mnożniki kar, bonusy, schodki, edge case'y) są na tym etapie wykonywane ręcznie poza systemem (np. w Excelu) przez osobę przygotowującą rozliczenia. Do aplikacji trafia gotowy wynik.
+**Co robimy:** Admin wgrywa do aplikacji **surowe dane źródłowe** z pliku Excel (wizyty, sloty, dyżury, recepty, oceny). Aplikacja **automatycznie oblicza wynagrodzenie** na podstawie reguł RPL i RGL skonfigurowanych przez admina w panelu ustawień. Admin nie liczy nic ręcznie — przygotowuje tylko plik wsadu z danymi źródłowymi i utrzymuje stawki w systemie.
 
 **Dlaczego tak:**
 
-1. **Szybkie wdrożenie niezależnie od istniejącego systemu.** Integracja z systemem źródłowym wymaga zaangażowania zespołu deweloperskiego i jest czasochłonna. Etap 1 można wdrożyć samodzielnie i szybko, bez czekania na zewnętrzne zasoby.
+1. **Szybkie wdrożenie niezależnie od istniejącego systemu.** Integracja z systemem źródłowym wymaga zaangażowania zespołu deweloperskiego i jest czasochłonna. Etap 1 opiera się na plikach Excel eksportowanych ręcznie przez admina — bez integracji z systemem.
 
-2. **Eliminacja najbardziej kosztownych ręcznych czynności.** Obecnie rozliczenia wysyłane są mailem do lekarzy zagranicznych, a faktury zbierane z różnych skrzynek i przekazywane działowi finansowemu ręcznie — co jest bardzo czasochłonne i generuje ryzyko błędów. Etap 1 to eliminuje w całości.
+2. **Eliminacja ręcznych obliczeń i ręcznej wysyłki.** Dotychczas obliczenia wykonywano w Excelu poza systemem, rozliczenia wysyłano mailem do lekarzy zagranicznych, a faktury zbierano ręcznie. Etap 1 eliminuje to wszystko: aplikacja liczy, lekarze widzą szczegóły online, faktury wgrywane są przez system.
 
-3. **Transparentność dla lekarzy.** Wszyscy lekarze — zarówno polscy, jak i zagraniczni — będą mogli podejrzeć szczegóły swojego wynagrodzenia: rozwinąć podsumowanie do poziomu poszczególnych wizyt.
+3. **Transparentność dla lekarzy.** Wszyscy lekarze — zarówno polscy, jak i zagraniczni — mogą podejrzeć szczegóły swojego wynagrodzenia: podsumowanie, poszczególne wizyty, dyżury, recepty.
 
-**Zakres Etapu 1:** E0, E1, E3, E4, E5, E6, E7, E8, E9, E10
+**Zakres Etapu 1:** E0, E1, E3, E4, E5, E6, E7, E8, E9, E10, E11
 
 ---
 
 ### Etap 2 — Docelowy (poza obecnym zakresem dokumentu)
 
-**Co robimy:** Integracja z systemem źródłowym i automatyczne wyliczanie wynagrodzenia przez silnik rozliczeń (reguły RPL i RGL). Admin nie musi już ręcznie liczyć niczego — system pobiera dane i przelicza kwoty samodzielnie.
+**Co robimy:** Integracja z systemem źródłowym — dane (wizyty, dyżury, recepty, sloty) pobierane są automatycznie bez ręcznego przygotowania pliku Excel. Silnik rozliczeń i reguły RPL/RGL pozostają te same co w Etapie 1 — zmienia się tylko źródło danych.
 
-**Zakres Etapu 2:** E2 (silnik rozliczeń), integracja z systemem źródłowym, KSeF
+**Zakres Etapu 2:** E1b (integracja z systemem źródłowym), KSeF
 
 > Szczegóły Etapu 2 opisane są w sekcji E2 dla celów dokumentacyjnych, ale **nie są przedmiotem bieżących prac deweloperskich.**
 
@@ -72,12 +72,12 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 | Typ | Waluta | Dane źródłowe (Etap 1) | Fakturowanie | Specyfika |
 |-----|--------|------------------------|--------------|-----------|
-| **Lekarze Polscy** | PLN | Wgrywanie z pliku (arkusz "Podsumowanie PL") | Upload PDF lub KSeF (docelowo) | Złożone reguły obliczane poza systemem w Etapie 1 |
-| **Lekarze Zagraniczni** | EUR lub GBP (+ przeliczenie na PLN dla admina/księgowości) | Wgrywanie z pliku (arkusz "Podsumowanie GLOBAL") | Upload PDF | Reguły obliczane poza systemem w Etapie 1; widoczność kolumn zależna od kraju lekarza |
+| **Lekarze Polscy** | PLN | Wgrywanie surowych danych z pliku XLSX (wizyty, sloty, dyżury, recepty, oceny) | Upload PDF lub KSeF (docelowo) | Reguły RPL skonfigurowane w aplikacji; system oblicza wynagrodzenie automatycznie |
+| **Lekarze Zagraniczni** | EUR lub GBP (+ przeliczenie na PLN dla admina/księgowości) | Wgrywanie surowych danych z pliku XLSX (wizyty, dyżury/sloty, recepty) | Upload PDF | Reguły RGL skonfigurowane w aplikacji; system oblicza wynagrodzenie automatycznie; widoczność kolumn zależna od kraju lekarza |
 
-> **Rozróżnienie wizualne:** Obok nazwy lekarza wyświetlana jest flaga kraju: PLN → flaga Polski, inna waluta → flaga kraju lekarza.
+> **Rozróżnienie wizualne:** Obok nazwy lekarza wyświetlany jest badge tekstowy: lekarze polscy → brak dodatkowego oznaczenia, lekarze zagraniczni → badge **„GLOBAL"** (bez flagi kraju).
 >
-> **Różny układ widoku:** Lekarze polscy i zagraniczni widzą różne kolumny w podsumowaniu i szczegółach — zgodnie ze strukturą pliku wsadu i regułami widoczności.
+> **Różny układ widoku:** Lekarze polscy i zagraniczni widzą różne kolumny w podsumowaniu i szczegółach — zgodnie ze strukturą arkuszy wsadu i regułami widoczności.
 
 ---
 
@@ -88,7 +88,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | ID | Nazwa Epiku | Opis | Priorytet |
 |----|-------------|------|-----------|
 | E0 | Logowanie i uwierzytelnianie | Email jako login. Pierwsze logowanie przez kod. Ustanowienie hasła lub tryb "kod każdorazowo". Wielokrotne konta per email. Dwujęzyczność (PL/EN). | Must Have |
-| E1 | Zarządzanie danymi rozliczeń | Wgrywanie gotowych danych (podsumowanie + lista wizyt) z pliku XLSX przez admina. Edycja i uzupełnianie wpisów. | Must Have |
+| E1 | Zarządzanie danymi rozliczeń | Wgrywanie surowych danych źródłowych (wizyty, sloty, dyżury, recepty, oceny) z pliku XLSX przez admina. Aplikacja oblicza wynagrodzenie na podstawie reguł z E11. Edycja i uzupełnianie wpisów. | Must Have |
 | E3 | Panel Lekarza | Widok bieżącego rozliczenia: podsumowanie i szczegóły wizyt. Akceptacja rozliczenia, zgłaszanie reklamacji, historia miesięcy. | Must Have |
 | E4 | Zarządzanie fakturami | Upload faktury PDF, OCR, automatyczna wysyłka, obsługa niezgodności. | Must Have |
 | E5 | Panel Księgowości | Przegląd faktur, zmiana statusów, import CSV z przelewami, eksport do FK. | Must Have |
@@ -97,13 +97,14 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | E8 | Dashboard statusów rozliczeń | Wykres słupkowy 5 statusów per data. Klikalne statusy → lista lekarzy. Historia zmian statusów. | Must Have |
 | E9 | Statusy płatności | Import CSV z banku lub ręczna zmiana statusu. "Przelew wysłany" + data zlecenia przelewu. | Must Have |
 | E10 | Filtry | Filtrowanie po roku/miesiącu, specjalizacji, lekarzu, statusie. | Must Have |
+| E11 | Konfiguracja ustawień rozliczeniowych | Panel admina: konfiguracja stawek per reguła (RPL/RGL), ustawienia bonusów i mnożników kar per lekarz i specjalizacja. | Must Have |
 
 ### Etap 2 — Docelowy (dokumentacja przyszłościowa)
 
 | ID | Nazwa Epiku | Opis | Priorytet |
 |----|-------------|------|-----------|
-| E2 | Silnik rozliczeń | Automatyczne wyliczanie kwot na podstawie reguł RPL i RGL. | — |
-| E1b | Integracja z systemem źródłowym | Automatyczne pobieranie danych z systemu. | — |
+| E2 | Silnik rozliczeń (dokumentacja) | Opis reguł RPL i RGL — zaimplementowane w Etapie 1 na podstawie pliku Excel; w Etapie 2 dane źródłowe pobierane automatycznie z systemu. | — |
+| E1b | Integracja z systemem źródłowym | Automatyczne pobieranie danych z systemu (zastąpienie pliku Excel). | — |
 
 ---
 
@@ -211,9 +212,9 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | | |
 |--|--|
 | **Aktor** | Admin |
-| **Cel** | Wgrać gotowe dane rozliczeniowe za dany miesiąc (wszystkie trzy arkusze naraz), aby były widoczne dla lekarzy. |
-| **Kroki** | 1. Admin wchodzi w sekcję "Dane rozliczeń" <br> 2. Wybiera miesiąc rozliczeniowy <br> 3. Wgrywa plik XLSX <br> 4. System waliduje strukturę pliku (czy arkusze i wymagane kolumny są obecne) <br> 5. System importuje dane i przypisuje rekordy do kont lekarzy na podstawie emaila i ID lekarza <br> 6. Dane stają się widoczne dla lekarzy <br> 7. Admin widzi podsumowanie importu: liczba rekordów per arkusz, ostrzeżenia o niedopasowanych rekordach |
-| **Acceptance Criteria** | ✓ System akceptuje plik XLSX z arkuszami: Podsumowanie PL, Podsumowanie GLOBAL, Szczegóły wizyt <br> ✓ Brakujące wymagane kolumny identyfikujące skutkują błędem importu z jasnym opisem <br> ✓ Ponowne wgranie dla tego samego miesiąca nadpisuje dane <br> ✓ Rekordy niedopasowane do żadnego konta lekarza są widoczne jako ostrzeżenia (import nie jest blokowany) <br> ✓ Szczegóły wizyt są przypisywane do właściwego lekarza i miesiąca |
+| **Cel** | Wgrać surowe dane źródłowe za dany miesiąc (wszystkie arkusze naraz), aby system mógł automatycznie wyliczyć wynagrodzenia i udostępnić je lekarzom. |
+| **Kroki** | 1. Admin wchodzi w sekcję "Dane rozliczeń" <br> 2. Wybiera miesiąc rozliczeniowy <br> 3. Wgrywa plik XLSX (jeden plik z wieloma arkuszami) <br> 4. System waliduje strukturę pliku (czy wymagane arkusze i kolumny identyfikujące są obecne) <br> 5. System importuje dane, przypisuje rekordy do kont lekarzy na podstawie Email + ID lekarza <br> 6. System oblicza wynagrodzenia na podstawie reguł skonfigurowanych w E11 <br> 7. Wyliczone rozliczenia stają się widoczne dla lekarzy <br> 8. Admin widzi podsumowanie importu: liczba rekordów per arkusz, ostrzeżenia o niedopasowanych rekordach, lista ewentualnych błędów obliczeniowych |
+| **Acceptance Criteria** | ✓ System akceptuje plik XLSX z arkuszami: Wizyty PL, Sloty PL, Dyżury PL, Recepty PL, Oceny, Wizyty GLOBAL, Sloty/Dyżury GLOBAL, Recepty GLOBAL <br> ✓ Brakujące wymagane kolumny identyfikujące (Email lekarza, ID lekarza, Miesiąc rozliczenia) skutkują błędem importu z jasnym opisem <br> ✓ Ponowne wgranie dla tego samego miesiąca nadpisuje dane i przelicza wynagrodzenia od nowa <br> ✓ Rekordy niedopasowane do żadnego konta lekarza są widoczne jako ostrzeżenia (import nie jest blokowany) <br> ✓ System stosuje reguły obliczeniowe skonfigurowane w E11 (stawki, bonusy, mnożniki kar) <br> ✓ Ustawienia per lekarz + specjalizacja z E11 (bonusy tak/nie, mnożniki kar tak/nie) uwzględniane przy obliczeniach |
 | **Priorytet** | **Must Have** |
 
 ---
@@ -303,7 +304,8 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | **Aktor** | Lekarz zagraniczny |
 | **Cel** | Zobaczyć zbiorcze rozliczenie za bieżący miesiąc w swoim języku i z kolumnami właściwymi dla swojego kraju. |
 | **Status rozliczenia** | Identyczne 5 statusów co dla lekarzy polskich |
-| **Kolumny widoczne dla lekarza zagranicznego** | Lekarz widzi kolumny oznaczone jako **"Standard"** ORAZ kolumny oznaczone jako **jego kraj** w wierszu "Widoczność" pliku wsadu. Kolumny przeznaczone dla innych krajów są **ukryte**. Nagłówki kolumn wyświetlane po angielsku (z wiersza tłumaczeń). |
+| **Oznaczenie lekarza zagranicznego** | Obok nazwy lekarza wyświetlany jest badge **„GLOBAL"** (bez flagi kraju). |
+| **Kolumny widoczne dla lekarza zagranicznego** | Lekarz widzi kolumny oznaczone jako **"Standard"** ORAZ kolumny oznaczone jako **jego kraj** w konfiguracji widoczności. Kolumny przeznaczone dla innych krajów są **ukryte**. Nagłówki kolumn wyświetlane po angielsku. |
 | **Kolumny "Standard" (widoczne dla wszystkich zagranicznych)** | Status · First name · Last name · Company invoicing · Company invoiced · Country · Type of contract · Date · **Total to be paid in local currency** · Currency · **Total to be paid in PLN** · Consultations ended · Consultations failed · Prescriptions · Additional costs · Penalties No. · Penalties amount · Other deductions · Data przelewu / Transfer date |
 | **Przykłady kolumn per kraj** | 🇨🇿 Czechy: + Consultations ended [weekdays], Consultations ended [weekends] <br> 🇪🇸 Hiszpania: + Consultations ended [day], Consultations ended [night], Shifts night <br> 🇦🇹 Austria: + Monthly Standby (shifts/days-nights/consultations/total), Daily Standby 1/2/3, Weekend/Holiday Standby |
 | **Kolumny widoczne tylko dla admina i księgowości** | Wszystkie kolumny (bez ograniczeń krajowych) + **Średnia stawka za konsultację** |
@@ -622,163 +624,224 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-## 4. Analiza pliku wsadu
+### E11 — Konfiguracja ustawień rozliczeniowych *(Etap 1)*
 
-> Poniżej analiza pliku `wsad.xlsx` i wymagane modyfikacje struktury pliku wgrywanego przez admina.
+> Panel admina do zarządzania regułami obliczeniowymi: stawkami per typ reguły (RPL/RGL), ustawieniami bonusów i mnożników kar per lekarz i specjalizacja. Zmiany w konfiguracji stosowane są przy kolejnym imporcie pliku wsadu (lub przeliczeniu istniejących danych na żądanie admina).
 
-### Arkusz 1 — Podsumowanie PL
+---
 
-**Obecne kolumny:**
+#### US-E11-01 — Konfiguracja stawek i reguł rozliczeniowych
+
+| | |
+|--|--|
+| **Aktor** | Admin |
+| **Cel** | Skonfigurować stawki dla wszystkich reguł RPL (lekarze polscy) i RGL (lekarze zagraniczni), tak aby system mógł automatycznie obliczać wynagrodzenia z pliku wsadu. |
+| **Zakres reguł PL (RPL)** | RPL-01: stawka B2C/B2B · RPL-02: stawka dzień roboczy/weekend · RPL-03: stawka bezpośrednia/specjalizacja · RPL-04: dodatek za język obcy · RPL-05: bonus (kwota per wizyta, próg średniej ocen) · RPL-06: progi mnożników kar (% wizyt z karami → mnożnik) · RPL-07: próg naliczania kar (minimalna liczba wizyt z karami) · RPL-08: stawka no-show · RPL-09: stawka godzinowa dyżuru · RPL-10: schodki konsultacji (progi i stawki) · RPL-11: stawka za receptę |
+| **Zakres reguł GLOBAL (RGL)** | RGL-01: stawka per konsultacja zakończona · RGL-02: stawka per konsultacja nieudana · RGL-03: stawka per recepta · RGL-04: schodki konsultacji (progi i stawki) · RGL-05: schodki recept (progi i stawki) · RGL-06: ryczałt Monthly Standby · RGL-07: stawki Daily Standby (DS1/DS2/DS3/Weekend) · RGL-08: ryczałt z progiem dostępności · RGL-11: stawka za godziny dodatkowe |
+| **Acceptance Criteria** | ✓ Każda reguła RPL i RGL ma dedykowany formularz edycji w panelu admina <br> ✓ Stawki mogą być różne per specjalizacja (np. RPL-03 różna stawka dla kardiologii i dermatologii) <br> ✓ Stawki RGL mogą być różne per kraj lekarza <br> ✓ Zmiany stawek są logowane (data, autor, wartość poprzednia i nowa) <br> ✓ Historia zmian stawek dostępna dla admina <br> ✓ Przy imporcie wsadu system stosuje stawki aktualne w momencie importu |
+| **Priorytet** | **Must Have** |
+| **Notatki** | Szczegółowy układ panelu stawek zostanie doprecyzowany po dostarczeniu pełnej listy obowiązujących reguł przez administratora. |
+
+---
+
+#### US-E11-02 — Ustawienia bonusów per lekarz i specjalizacja
+
+| | |
+|--|--|
+| **Aktor** | Admin |
+| **Cel** | Określić dla każdego lekarza i każdej jego specjalizacji, czy bonus (RPL-05) ma być uwzględniany przy obliczaniu wynagrodzenia. |
+| **Kontekst** | Domyślnie bonus jest uwzględniany. Admin może wyłączyć bonus dla konkretnej pary lekarz+specjalizacja, jeśli wynika to z warunków umowy lub innych ustaleń. |
+| **Kroki** | 1. Admin wchodzi w profil lekarza → zakładka "Ustawienia rozliczeniowe" <br> 2. Widzi listę specjalizacji przypisanych do lekarza <br> 3. Dla każdej specjalizacji toggle: "Uwzględniaj bonus" (domyślnie: tak) <br> 4. Zapisuje zmiany |
+| **Acceptance Criteria** | ✓ Ustawienie per lekarz + specjalizacja (jeden lekarz może mieć bonus włączony dla specjalizacji A i wyłączony dla B) <br> ✓ Domyślna wartość: bonus uwzględniany <br> ✓ Zmiana skutkuje automatycznym przeliczeniem rozliczenia przy kolejnym imporcie lub na żądanie <br> ✓ Zmiana zalogowana z datą i autorem |
+| **Priorytet** | **Must Have** |
+
+---
+
+#### US-E11-03 — Ustawienia mnożników kar per lekarz i specjalizacja
+
+| | |
+|--|--|
+| **Aktor** | Admin |
+| **Cel** | Określić dla każdego lekarza i każdej jego specjalizacji, czy kary mają być liczone z mnożnikiem (RPL-06), czy pojedynczo (bez mnożnika). |
+| **Kontekst** | Większość lekarzy ma kary liczone pojedynczo (mnożnik = ×1 niezależnie od udziału wizyt z karami). Mnożnik stosowany jest tylko dla wybranych lekarzy — tam gdzie wynika to z umowy. Kar nie można wyłączyć całkowicie — wyłączyć można jedynie mechanizm mnożnika. |
+| **Kroki** | 1. Admin wchodzi w profil lekarza → zakładka "Ustawienia rozliczeniowe" <br> 2. Widzi listę specjalizacji przypisanych do lekarza <br> 3. Dla każdej specjalizacji toggle: "Stosuj mnożnik kar" (domyślnie: nie) <br> 4. Zapisuje zmiany |
+| **Acceptance Criteria** | ✓ Ustawienie per lekarz + specjalizacja <br> ✓ Domyślna wartość: mnożnik nie stosowany (kary liczone pojedynczo) <br> ✓ Gdy mnożnik wyłączony: kary sumowane bez stosowania progów z RPL-06 (kwota kary = suma kwot kar z Arkusza 1) <br> ✓ Gdy mnożnik włączony: kary obliczane zgodnie z RPL-06 (progi udziału wizyt z karami → mnożnik) <br> ✓ Zmiana zalogowana z datą i autorem |
+| **Priorytet** | **Must Have** |
+
+---
+
+## 4. Struktura pliku wsadu (XLSX)
+
+> Admin wgrywa **jeden plik XLSX z ośmioma arkuszami**. Plik zawiera surowe dane źródłowe — aplikacja na ich podstawie oblicza wynagrodzenia zgodnie z regułami skonfigurowanymi w E11. Nie ma arkuszy z gotowymi podsumowaniami — te są generowane przez system.
+>
+> **Kolumny identyfikujące (wymagane we wszystkich arkuszach):** `Email lekarza` · `ID lekarza` · `Miesiąc rozliczenia` (format YYYY-MM). Brak którejkolwiek z tych kolumn = błąd importu z jasnym opisem.
+
+---
+
+### Arkusz 1 — Wizyty PL
+
+> Podstawa obliczeń dla lekarzy polskich: stawki za wizyty (RPL-01, RPL-02, RPL-03), język obcy (RPL-04), kary (RPL-06, RPL-07), no-show (RPL-08).
 
 | # | Kolumna | Uwagi |
 |---|---------|-------|
-| 1 | Imię lekarza | |
-| 2 | Nazwisko lekarza | |
-| 3 | Miesiąc rozliczenia | |
-| 4 | Wynagrodzenie – Kwota do faktury | Formuła w pliku; system zapisuje wartość wynikową |
-| 5 | Waluta | PLN |
-| 6 | Liczba wizyt – wszystkie | Formuła (G+I+K) |
-| 7 | Liczba wizyt – zwykłe | |
-| 8 | Wynagrodzenie za wizyty – zwykłe | |
-| 9 | Liczba wizyt – pacjent nie zgłosił się | |
-| 10 | Wynagrodzenie – pacjent nie zgłosił się | |
-| 11 | Liczba wizyt – umówione bezpośrednio | |
-| 12 | Wynagrodzenie – umówione bezpośrednio | |
-| 13 | Liczba wizyt – w języku obcym | |
-| 14 | Dodatek za wizyty – w języku obcym | |
-| 15 | Liczba kar | |
-| 16 | Mnożnik kar | |
-| 17 | Kwota kar | |
-| 18 | Bonus | |
-| 19 | Telefon | |
-| 20 | e-mail | ✅ Używany jako login/identyfikator lekarza |
-
-**Wymagane dodatkowe kolumny (do dodania do pliku):**
-
-| Kolumna | Opis | Powód |
-|---------|------|-------|
-| **ID lekarza** | Unikalny identyfikator konta lekarza w systemie | Jeden email może mieć wiele kont (różne Doctor ID). Bez tego pola import nie jest w stanie rozróżnić kont i przypisać wiersza do właściwego konta. |
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Data wizyty | |
+| 5 | Data rozpoczęcia wizyty | |
+| 6 | Data zamknięcia wizyty | |
+| 7 | Specjalizacja | |
+| 8 | Rodzaj | |
+| 9 | BU | B2C / B2B |
+| 10 | Klinika | |
+| 11 | Pacjent | |
+| 12 | Język wizyty | |
+| 13 | Pacjent nie zgłosił się | tak / nie |
+| 14 | Umówienie bezpośrednie | tak / nie |
+| 15 | Opóźnienie [min.] | |
+| 16 | Kara | tak / nie |
+| 17 | Kwota kary | Kwota jednostkowa kary przed zastosowaniem mnożnika |
 
 **Kolumny wyliczane przez system (nie w pliku):**
 
-| Kolumna | Formuła | Widoczność |
-|---------|---------|------------|
-| Średnia stawka za konsultację [PLN] | Kwota do faktury ÷ Liczba wizyt wszystkie | Tylko admin |
+| Kolumna | Formuła / Źródło | Widoczność |
+|---------|-----------------|------------|
+| Mnożnik kar | Zależny od udziału wizyt z karami (RPL-06) + ustawień per lekarz (E11) | Admin |
+| Kwota kar z mnożnikiem | Suma kar × mnożnik | Admin + lekarz |
+| Bonus | Na podstawie arkusza Oceny + Sloty PL (RPL-05) + ustawień per lekarz+spec (E11) | Admin + lekarz |
+| Wynagrodzenie za wizyty | Obliczone wg RPL-01 do RPL-04 na podstawie stawek z E11 | Admin + lekarz |
+| Kwota do faktury | Suma składników − kary + bonus | Admin + lekarz |
+| Średnia stawka za konsultację [PLN] | Kwota do faktury ÷ Liczba wizyt | Tylko admin |
 | Status rozliczenia | Zarządzany przez system | Admin + lekarz |
 | Data przelewu | Uzupełniana przy imporcie CSV | Admin + lekarz |
 
 ---
 
-### Arkusz 2 — Podsumowanie GLOBAL
+### Arkusz 2 — Sloty PL
 
-**Struktura pliku:** Trzy specjalne wiersze na początku:
-- **Wiersz 1:** Nagłówki po polsku
-- **Wiersz 2:** Tłumaczenia nagłówków na angielski
-- **Wiersz 3:** Widoczność per kolumna (Standard / nazwa kraju)
-- **Wiersze 4+:** Dane lekarzy
+> Podstawa do obliczenia bonusu RPL-05: bonus 3 zł/wizytę gdy slot zaplanowany ≥ 7 dni przed wizytą i średnia ocen ≥ 4,75 (oceny z Arkusza 5).
 
-**Zasada widoczności kolumn:**
+| # | Kolumna | Uwagi |
+|---|---------|-------|
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Data wizyty | Klucz łączący z Arkuszem 1 |
+| 5 | Data zaplanowania slotu przez pacjenta | System oblicza różnicę z datą wizyty; ≥ 7 dni = wizyta kwalifikuje się do bonusu |
 
-| Widoczność | Znaczenie |
-|------------|-----------|
-| **Standard** | Kolumna widoczna dla wszystkich lekarzy zagranicznych |
-| **Czechy** | Kolumna widoczna tylko dla lekarzy z Czech |
-| **Hiszpania** | Kolumna widoczna tylko dla lekarzy z Hiszpanii |
-| **Austria** | Kolumna widoczna tylko dla lekarzy z Austrii |
-| *(inne kraje)* | Analogicznie — kolumna widoczna tylko dla lekarzy z danego kraju |
+---
 
-**Mapowanie kolumn na widoczność (z pliku wsadu):**
+### Arkusz 3 — Dyżury PL
 
-| Kolumna (PL) | Kolumna (EN) | Widoczność |
-|---|---|---|
-| Imię lekarza | First name | Standard |
-| Nazwisko lekarza | Last name | Standard |
-| Firma fakturująca | Company invoicing | Standard |
-| Firma – Nabywca na fakturze | Company invoiced | Standard |
-| Kraj | Country | Standard |
-| Forma zatrudnienia | Type of contract | Standard |
-| Data | Date | Standard |
-| Kwota rozliczenia miesięcznego w walucie lokalnej | Total to be paid in local currency | Standard |
-| Waluta | Currency | Standard |
-| Konsultacje zakończone | Consultations ended | Standard |
-| Konsultacje zakończone [dzień roboczy] | Consultations ended [weekdays] | **Czechy** |
-| Konsultacje zakończone [weekend] | Consultations ended [weekends] | **Czechy** |
-| Konsultacje zakończone [dzień] | Consultations ended [day] | **Hiszpania** |
-| Konsultacje zakończone [noc] | Consultations ended [night] | **Hiszpania** |
-| Konsultacje zakończone bez odpowiedzi | Consultations failed | Standard |
-| Dyżur nocny | Shifts night | **Hiszpania** |
-| Dyżur miesięczny – zmiany | Monthly Standby – shifts | **Austria** |
-| Dyżur miesięczny – dni/noce z konsultacjami | Monthly Standby – days/nights with consultations | **Austria** |
-| Dyżur miesięczny – konsultacje | Monthly Standby – consultations | **Austria** |
-| Dyżur miesięczny – kwota | Monthly Standby – total | **Austria** |
-| Dyżur dzienny 1 – zmiany | Daily Standby 1 – shifts | **Austria** |
-| Dyżur dzienny 1 – dni/noce z konsultacjami | Daily Standby 1 – days/nights with consultations | **Austria** |
-| Dyżur dzienny 1 – konsultacje | Daily Standby 1 – consultations | **Austria** |
-| Dyżur dzienny 1 – kwota | Daily Standby 1 – total | **Austria** |
-| Dyżur dzienny 2 – zmiany | Daily Standby 2 – shifts | **Austria** |
-| Dyżur dzienny 2 – dni/noce z konsultacjami | Daily Standby 2 – days/nights with consultations | **Austria** |
-| Dyżur dzienny 2 – konsultacje | Daily Standby 2 – consultations | **Austria** |
-| Dyżur dzienny 2 – kwota | Daily Standby 2 – total | **Austria** |
-| Dyżur dzienny 3 – zmiany | Daily Standby 3 – shifts | **Austria** |
-| Dyżur dzienny 3 – dni/noce z konsultacjami | Daily Standby 3 – days/nights with consultations | **Austria** |
-| Dyżur dzienny 3 – konsultacje | Daily Standby 3 – consultations | **Austria** |
-| Dyżur dzienny 3 – kwota | Daily Standby 3 – total | **Austria** |
-| Dyżur weekendowy/świąteczny – zmiany | Weekend/Holiday Standby – shifts | **Austria** |
-| Dyżur weekendowy/świąteczny – dni/noce z konsultacjami | Weekend/Holiday – days/nights with consultations | **Austria** |
-| Dyżur weekendowy/świąteczny – konsultacje | Weekend/Holiday – consultations | **Austria** |
-| Dyżur weekendowy/świąteczny – kwota | Weekend/Holiday – total | **Austria** |
-| Recepty | Prescriptions | Standard |
-| Dodatkowe koszty | Additional costs | Standard |
-| Liczba kar | Penalties No. | Standard |
-| Kwota kar | Penalties amount | Standard |
-| Inne odliczenia | Other deductions | Standard |
+> Podstawa do obliczenia wynagrodzenia za dyżury lekarzy polskich (RPL-09: stawka godzinowa).
 
-**Wymagane dodatkowe kolumny (do dodania do pliku):**
+| # | Kolumna | Uwagi |
+|---|---------|-------|
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Data dyżuru | |
+| 5 | Liczba godzin | Podstawa do RPL-09 |
 
-| Kolumna | Opis | Powód |
-|---------|------|-------|
-| **Email lekarza** | Adres email lekarza | Brak w obecnym pliku — konieczny do przypisania rekordu do konta lekarza (login). |
-| **ID lekarza** | Unikalny identyfikator konta | Jeden email może mieć wiele kont. |
+---
+
+### Arkusz 4 — Recepty PL
+
+> Podstawa do obliczenia wynagrodzenia za recepty lekarzy polskich (RPL-11: stała stawka za receptę).
+
+| # | Kolumna | Uwagi |
+|---|---------|-------|
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Liczba recept | Podstawa do RPL-11 |
+
+---
+
+### Arkusz 5 — Oceny
+
+> Podstawa do weryfikacji warunku bonusu RPL-05 (średnia ocen ≥ 4,75). Arkusz wspólny — zawiera oceny zarówno dla lekarzy PL, jak i dla lekarzy GLOBAL (jeśli dotyczy).
+
+| # | Kolumna | Uwagi |
+|---|---------|-------|
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Specjalizacja | Oceny mogą różnić się per specjalizacja |
+| 5 | Średnia ocen | Wartość dziesiętna; system porównuje z progiem z E11 |
+
+---
+
+### Arkusz 6 — Wizyty GLOBAL
+
+> Podstawa do obliczeń dla lekarzy zagranicznych: konsultacje zakończone (RGL-01), nieudane (RGL-02), schodki (RGL-04). Kolumny widoczne per kraj określone są w konfiguracji systemu (nie w strukturze pliku wsadu).
+
+| # | Kolumna | Uwagi |
+|---|---------|-------|
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Kraj lekarza | Określa widoczność kolumn w panelu lekarza |
+| 5 | Data wizyty | |
+| 6 | Status wizyty | ended / failed |
+| 7 | Typ dnia | dzień roboczy / weekend (Czechy) lub dzień / noc (Hiszpania); puste dla innych krajów |
+| 8 | Język wizyty | |
 
 **Kolumny wyliczane przez system (nie w pliku):**
 
-| Kolumna | Formuła | Widoczność |
-|---------|---------|------------|
-| Kwota rozliczenia w PLN | Kwota lokalna × kurs (EUR lub GBP → PLN) | Standard (wszyscy) |
+| Kolumna | Formuła / Źródło | Widoczność |
+|---------|-----------------|------------|
+| Total to be paid in local currency | Suma składników wg RGL-01 do RGL-11 | Standard (Admin + lekarz) |
+| Total to be paid in PLN | Kwota lokalna × kurs (EUR/GBP → PLN) z konfiguracji admina | Standard (Admin + lekarz) |
 | Średnia stawka za konsultację | Kwota lokalna ÷ Consultations ended | Tylko admin |
 | Status rozliczenia | Zarządzany przez system | Admin + lekarz |
 | Data przelewu | Uzupełniana przy imporcie CSV | Admin + lekarz |
 
 ---
 
-### Arkusz 3 — Szczegóły wizyt
+### Arkusz 7 — Sloty/Dyżury GLOBAL
 
-**Obecne kolumny:**
+> Podstawa do obliczenia wynagrodzenia za dyżury lekarzy zagranicznych (RGL-06: Monthly Standby, RGL-07: Daily Standby DS1/DS2/DS3/Weekend, RGL-08: ryczałt z progiem dostępności).
 
 | # | Kolumna | Uwagi |
 |---|---------|-------|
-| 1 | Data wizyty | |
-| 2 | Data rozpoczęcia wizyty | |
-| 3 | Data zamknięcia wizyty | |
-| 4 | Specjalizacja | |
-| 5 | Rodzaj | |
-| 6 | BU | B2C / B2B |
-| 7 | Klinika | |
-| 8 | Pacjent | |
-| 9 | Język wizyty | |
-| 10 | Pacjent nie zgłosił się | tak / nie |
-| 11 | Umówienie bezpośrednie | tak / nie |
-| 12 | Opóźnienie [min.] | Formuła w pliku |
-| 13 | Kara | tak / nie |
-| 14 | Kwota kary | |
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Kraj lekarza | |
+| 5 | Typ dyżuru | Monthly Standby / DS1 / DS2 / DS3 / Weekend-Holiday Standby |
+| 6 | Data dyżuru | |
+| 7 | Data/godzina początku | |
+| 8 | Data/godzina końca | |
+| 9 | Liczba konsultacji w dyżurze | Używana do RGL-07 i RGL-08 |
 
-**Wymagane dodatkowe kolumny (do dodania do pliku):**
+---
 
-| Kolumna | Opis | Powód |
-|---------|------|-------|
-| **Email lekarza** | Adres email lekarza | Plik nie zawiera żadnego identyfikatora lekarza — bez tego kolumna nie można przypisać wizyt do właściwego konta. |
-| **ID lekarza** | Unikalny identyfikator konta | Jeden email może mieć wiele kont — wizyta musi trafić do właściwego konta. |
-| **Miesiąc rozliczenia** | np. 2026-02 | Choć datę wizyty można z niej wywnioskować, jawne pole eliminuje wątpliwości przy wizytach na granicy miesięcy. |
+### Arkusz 8 — Recepty GLOBAL
+
+> Podstawa do obliczenia wynagrodzenia za recepty lekarzy zagranicznych (RGL-03: stawka per recepta, RGL-05: schodki recept).
+
+| # | Kolumna | Uwagi |
+|---|---------|-------|
+| 1 | **Email lekarza** | ✅ Identyfikator |
+| 2 | **ID lekarza** | ✅ Identyfikator |
+| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
+| 4 | Kraj lekarza | Potrzebny dla RGL-05 (schodki — progi mogą różnić się per kraj) |
+| 5 | Liczba recept | |
+
+---
+
+### Widoczność kolumn w panelu lekarza zagranicznego
+
+> Zasada widoczności kolumn z poprzednich wersji dokumentu (oparcie na wierszu widoczności w pliku) zostaje zastąpiona przez **konfigurację w systemie** (E11). Adminnistrator definiuje które kolumny wynikowe są widoczne dla lekarzy z danego kraju.
+
+| Widoczność | Znaczenie |
+|------------|-----------|
+| **Standard** | Kolumna widoczna dla wszystkich lekarzy zagranicznych |
+| **Czechy** | Konsultacje zakończone [dzień roboczy], Konsultacje zakończone [weekend] |
+| **Hiszpania** | Konsultacje zakończone [dzień], Konsultacje zakończone [noc], Dyżur nocny |
+| **Austria** | Monthly Standby (zmiany/dni-noce/konsultacje/kwota), Daily Standby 1/2/3, Weekend/Holiday Standby |
+| *(inne kraje)* | Definiowane przez admina w konfiguracji widoczności kolumn |
 
 ---
 
@@ -803,11 +866,15 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | 4 | Czy kursy EUR/PLN i GBP/PLN wpisywane ręcznie, czy integracja z API NBP? | E5, E6 | Do ustalenia |
 | 5 | Czy OCR ma działać na bazie biblioteki wbudowanej czy zewnętrznej usługi (np. Google Document AI)? | E4 | Do ustalenia |
 | 6 | Jak jednoznacznie identyfikować konto lekarza w CSV z przelewami — czy to ID lekarza, email, czy inne pole? | E9 | Do ustalenia |
-| 7 | Jak wyglądać będzie pełna lista krajów lekarzy zagranicznych i ich specyficznych kolumn? | E1, E3 | Do doprecyzowania |
+| 7 | Jak wyglądać będzie pełna lista krajów lekarzy zagranicznych i ich specyficznych kolumn wynikowych? | E11, E3 | Do doprecyzowania |
 | 8 | Czy rozliczenie zewnętrzne (RGL-10) ma być widoczne jako osobna pozycja dla księgowości? | E2 (Etap 2), E5 | Do ustalenia (Etap 2) |
-| 9 | Jaki system źródłowy dla Etapu 2? | E2, E1b | Do ustalenia (Etap 2) |
+| 9 | Jaki system źródłowy dla Etapu 2? | E1b | Do ustalenia (Etap 2) |
 | 10 | Jak długo przechowywać historię zmian statusów? | E8 | Do ustalenia |
 | 11 | Czy emaile systemowe (powiadomienia) mają być dwujęzyczne (PL/EN wg preferencji lekarza)? | E7 | Do ustalenia |
+| 12 | Jakie są pełne obowiązujące reguły RPL i RGL (stawki, progi, edge case'y)? Potrzebne do zaprojektowania szczegółowego układu panelu stawek w E11. | E11 | **Oczekuje na dostarczenie reguł przez administratora** |
+| 13 | Czy przy zmianie stawek w E11 istniejące rozliczenia powinny być automatycznie przeliczone, czy dopiero przy kolejnym imporcie wsadu? | E11, E1 | Do ustalenia |
+| 14 | Czy próg średniej ocen dla bonusu RPL-05 (4,75) jest stały globalnie, czy konfigurowalny per lekarz/specjalizacja w E11? | E11 | Do ustalenia |
+| 15 | Czy arkusz Oceny zawiera oceny tylko dla lekarzy PL (bonus RPL-05), czy także dla GLOBAL? | E1, Arkusz 5 | Do ustalenia |
 
 ---
 
@@ -828,9 +895,14 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | **Reklamacja** | Zastrzeżenie lekarza do konkretnej wizyty |
 | **OCR** | Odczyt kwoty z PDF faktury |
 | **Lekarz Polski** | Lekarz rozliczany w PLN |
-| **Lekarz Zagraniczny** | Lekarz rozliczany w EUR lub GBP |
-| **Widoczność** | Wiersz w arkuszu GLOBAL określający które kolumny widzi lekarz z danego kraju |
+| **Lekarz Zagraniczny** | Lekarz rozliczany w EUR lub GBP; oznaczony badge'em „GLOBAL" w interfejsie |
+| **Badge GLOBAL** | Tekstowy znacznik wyświetlany obok nazwy lekarza zagranicznego (zamiast flagi kraju) |
+| **Widoczność kolumn** | Konfiguracja w systemie (E11) określająca które kolumny wynikowe widzi lekarz z danego kraju |
 | **Standard** | Kolumna widoczna dla wszystkich lekarzy zagranicznych |
 | **ID lekarza** | Unikalny identyfikator konta lekarza w systemie — konieczny gdy jeden email = wiele kont |
-| **Etap 1** | MVP — import gotowych danych, panel lekarza, faktury, dashboard, płatności |
-| **Etap 2** | Docelowy — integracja z systemem źródłowym + automatyczny silnik rozliczeń |
+| **Slot** | Zaplanowany termin wizyty; data zaplanowania slotu używana do obliczenia bonusu RPL-05 (min. 7 dni przed wizytą) |
+| **Mnożnik kar** | Współczynnik stosowany do sumy kar, zależny od udziału wizyt z karami (RPL-06); stosowany tylko dla wybranych lekarzy per ustawienia E11 |
+| **Etap 1** | MVP — import surowych danych z pliku Excel, silnik obliczeniowy oparty na stawkach z E11, panel lekarza, faktury, dashboard, płatności |
+| **Etap 2** | Docelowy — integracja z systemem źródłowym (zastąpienie pliku Excel automatycznym pobieraniem danych) |
+| **RPL** | Reguły rozliczeniowe dla lekarzy Polskich |
+| **RGL** | Reguły rozliczeniowe dla lekarzy Globalnych (zagranicznych) |
