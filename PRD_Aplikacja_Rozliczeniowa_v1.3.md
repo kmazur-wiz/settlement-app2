@@ -753,15 +753,15 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 ---
 
 **W8 — Rozliczenie grupowe z podmiotem zewnętrznym**
-> Kilku lekarzy tworzy grupę rozliczeniową. Podmiot zewnętrzny (np. ubezpieczyciel) płaci część kwoty na podstawie faktury wystawianej przez lekarza głównego — Telemedi wypłaca pozostałość z ryczałtu grupowego.
+> Kilku lekarzy tworzy grupę rozliczeniową. Na podstawie łącznej liczby zakończonych konsultacji całej grupy wyliczana jest faktura do podmiotu zewnętrznego (np. ubezpieczyciela) — Telemedi wypłaca grupie pozostałość z ryczałtu.
 
 | Parametr | Opis | Przykładowe wartości |
 |---|---|---|
 | Ryczałt grupowy [€] | Łączna kwota do wypłaty przez Telemedi dla grupy | 600 |
-| Nazwa podmiotu zewnętrznego | Klient fakturowany przez lekarza głównego grupy | Uniqa |
-| Lekarz główny | Czyje konsultacje są podstawą faktury do klienta zewnętrznego | D. Redzia |
-| Stawka per cons do faktury zewnętrznej [€] | Stawka używana do wyliczenia wartości faktury do klienta | 20 |
-| Wzór rozliczenia Telemedi | Kwota wypłacana przez Telemedi | Ryczałt − wartość faktury zewnętrznej |
+| Nazwa podmiotu zewnętrznego | Klient fakturowany na podstawie konsultacji grupy | Uniqa |
+| Stawka per cons do faktury zewnętrznej [€] | Za każdą zakończoną konsultację sumarycznie w grupie | 20 |
+| Wzór faktury do podmiotu zewnętrznego | Invoice_zewnętrzna = stawka × suma ended całej grupy | ended_grupa × 20 |
+| Wzór rozliczenia Telemedi | Kwota do wypłaty przez Telemedi | Ryczałt − Invoice_zewnętrzna |
 
 ---
 
@@ -1047,8 +1047,8 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | 12 | Czy przy zmianie stawek w E11 istniejące rozliczenia powinny być automatycznie przeliczone, czy dopiero przy kolejnym imporcie wsadu? | E11, E1 | Do ustalenia |
 | 13 | Czy próg średniej ocen dla bonusu RPL-05 (4,75) jest stały globalnie, czy konfigurowalny per lekarz/specjalizacja w E11? | E11 | Do ustalenia |
 | 14 | Czy arkusz Oceny (Arkusz 4) zawiera oceny tylko dla lekarzy PL (bonus RPL-05), czy także dla GLOBAL? | E1, Arkusz 4 | Do ustalenia |
-| 15 | W modelu W8 (rozliczenie grupowe/zewnętrzne — Serbia): czy D. Redzia jest jednym z lekarzy grupy, czy osobnym kontem? Jak dokładnie obliczana jest część każdego lekarza z grupy — równe udziały czy inny klucz podziału? | E11 W8 | **Do wyjaśnienia** |
-| 16 | W modelu W8: czy „Telemedi = 600 − faktura zewnętrzna" to kwota na całą grupę (do podziału), czy per lekarz? | E11 W8 | **Do wyjaśnienia** |
+| 15 | W modelu W8: Invoice_zewnętrzna = stawka × suma ended całej grupy; Telemedi wypłaca: Ryczałt − Invoice_zewnętrzna (kwota grupowa). | E11 W8 | ✅ Zamknięte |
+| 16 | *(Połączone z pyt. 15)* | E11 W8 | ✅ Zamknięte |
 | 17 | Czy statusy failed {102, 103, 104} są stałe dla wszystkich lekarzy W2, czy konfigurowalne per lekarz? | E11 W2 | Do ustalenia |
 | 18 | W modelu W4 (OPL): jak liczyć proporcjonalną redukcję — per brakujący dzień, czy per brakujący blok godzinowy? | E11 W4, US-E11-04 | Do ustalenia |
 | 19 | Czy stawka indywidualna za receptę z E11-05 nadpisuje stawkę presc tylko w obliczeniach, czy też jest widoczna osobno w szczegółach rozliczenia? | E11-05 | Do ustalenia |
