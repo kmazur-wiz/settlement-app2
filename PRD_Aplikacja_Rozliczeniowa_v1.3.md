@@ -214,7 +214,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | **Aktor** | Admin |
 | **Cel** | Wgrać surowe dane źródłowe za dany miesiąc (wszystkie arkusze naraz), aby system mógł automatycznie wyliczyć wynagrodzenia i udostępnić je lekarzom. |
 | **Kroki** | 1. Admin wchodzi w sekcję "Dane rozliczeń" <br> 2. Wybiera miesiąc rozliczeniowy <br> 3. Wgrywa plik XLSX (jeden plik z wieloma arkuszami) <br> 4. System waliduje strukturę pliku (czy wymagane arkusze i kolumny identyfikujące są obecne) <br> 5. System importuje dane, przypisuje rekordy do kont lekarzy na podstawie Email + ID lekarza <br> 6. System oblicza wynagrodzenia na podstawie reguł skonfigurowanych w E11 <br> 7. Wyliczone rozliczenia stają się widoczne dla lekarzy <br> 8. Admin widzi podsumowanie importu: liczba rekordów per arkusz, ostrzeżenia o niedopasowanych rekordach, lista ewentualnych błędów obliczeniowych |
-| **Acceptance Criteria** | ✓ System akceptuje plik XLSX z arkuszami: Wizyty PL, Sloty PL, Dyżury PL, Recepty PL, Oceny, Wizyty GLOBAL, Sloty/Dyżury GLOBAL, Recepty GLOBAL <br> ✓ Brakujące wymagane kolumny identyfikujące (Email lekarza, ID lekarza, Miesiąc rozliczenia) skutkują błędem importu z jasnym opisem <br> ✓ Ponowne wgranie dla tego samego miesiąca nadpisuje dane i przelicza wynagrodzenia od nowa <br> ✓ Rekordy niedopasowane do żadnego konta lekarza są widoczne jako ostrzeżenia (import nie jest blokowany) <br> ✓ System stosuje reguły obliczeniowe skonfigurowane w E11 (stawki, bonusy, mnożniki kar) <br> ✓ Ustawienia per lekarz + specjalizacja z E11 (bonusy tak/nie, mnożniki kar tak/nie) uwzględniane przy obliczeniach |
+| **Acceptance Criteria** | ✓ System akceptuje plik XLSX z arkuszami: Wizyty PL, Sloty PL, Recepty PL, Oceny, Wizyty GLOBAL, Sloty/Dyżury GLOBAL, Recepty GLOBAL <br> ✓ Brakujące wymagane kolumny identyfikujące (Email lekarza, ID lekarza, Miesiąc rozliczenia) skutkują błędem importu z jasnym opisem <br> ✓ Ponowne wgranie dla tego samego miesiąca nadpisuje dane i przelicza wynagrodzenia od nowa <br> ✓ Rekordy niedopasowane do żadnego konta lekarza są widoczne jako ostrzeżenia (import nie jest blokowany) <br> ✓ System stosuje reguły obliczeniowe skonfigurowane w E11 (stawki, bonusy, mnożniki kar) <br> ✓ Ustawienia per lekarz + specjalizacja z E11 (bonusy tak/nie, mnożniki kar tak/nie) uwzględniane przy obliczeniach |
 | **Priorytet** | **Must Have** |
 
 ---
@@ -630,17 +630,165 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-#### US-E11-01 — Konfiguracja stawek i reguł rozliczeniowych
+#### US-E11-01 — Konfiguracja wzorców kontraktu i stawek (lekarze GLOBAL)
 
 | | |
 |--|--|
 | **Aktor** | Admin |
-| **Cel** | Skonfigurować stawki dla wszystkich reguł RPL (lekarze polscy) i RGL (lekarze zagraniczni), tak aby system mógł automatycznie obliczać wynagrodzenia z pliku wsadu. |
-| **Zakres reguł PL (RPL)** | RPL-01: stawka B2C/B2B · RPL-02: stawka dzień roboczy/weekend · RPL-03: stawka bezpośrednia/specjalizacja · RPL-04: dodatek za język obcy · RPL-05: bonus (kwota per wizyta, próg średniej ocen) · RPL-06: progi mnożników kar (% wizyt z karami → mnożnik) · RPL-07: próg naliczania kar (minimalna liczba wizyt z karami) · RPL-08: stawka no-show · RPL-09: stawka godzinowa dyżuru · RPL-10: schodki konsultacji (progi i stawki) · RPL-11: stawka za receptę |
-| **Zakres reguł GLOBAL (RGL)** | RGL-01: stawka per konsultacja zakończona · RGL-02: stawka per konsultacja nieudana · RGL-03: stawka per recepta · RGL-04: schodki konsultacji (progi i stawki) · RGL-05: schodki recept (progi i stawki) · RGL-06: ryczałt Monthly Standby · RGL-07: stawki Daily Standby (DS1/DS2/DS3/Weekend) · RGL-08: ryczałt z progiem dostępności · RGL-11: stawka za godziny dodatkowe |
-| **Acceptance Criteria** | ✓ Każda reguła RPL i RGL ma dedykowany formularz edycji w panelu admina <br> ✓ Stawki mogą być różne per specjalizacja (np. RPL-03 różna stawka dla kardiologii i dermatologii) <br> ✓ Stawki RGL mogą być różne per kraj lekarza <br> ✓ Zmiany stawek są logowane (data, autor, wartość poprzednia i nowa) <br> ✓ Historia zmian stawek dostępna dla admina <br> ✓ Przy imporcie wsadu system stosuje stawki aktualne w momencie importu |
+| **Cel** | Przypisać każdemu lekarzowi zagranicznemu wzorzec kontraktu (W1–W10) wraz z parametrami, tak aby system mógł automatycznie obliczyć wynagrodzenie z danych wsadu. |
+| **Mechanizm** | Admin wybiera jeden z 10 wzorców i uzupełnia jego parametry dla danego lekarza. Formularz pokazuje tylko pola właściwe dla wybranego wzorca (dynamiczny formularz). |
+| **Funkcja „Kopiuj z lekarza"** | Przy przypisywaniu wzorca admin może wybrać innego lekarza z listy — system kopiuje wzorzec i wszystkie parametry. Przydatne gdy wielu lekarzy ma identyczne reguły (np. „jak Caroline Seeberger"). |
+| **Acceptance Criteria** | ✓ Admin może wybrać jeden z 10 wzorców dla każdego lekarza GLOBAL <br> ✓ Formularz parametrów jest dynamiczny — pokazuje tylko pola dla wybranego wzorca <br> ✓ Funkcja „Kopiuj z lekarza" — kopiuje wzorzec i parametry, admin może edytować kopię <br> ✓ Wszystkie zmiany parametrów logowane (data, autor, wartość poprzednia/nowa) <br> ✓ System stosuje parametry aktualne w momencie importu wsadu |
 | **Priorytet** | **Must Have** |
-| **Notatki** | Szczegółowy układ panelu stawek zostanie doprecyzowany po dostarczeniu pełnej listy obowiązujących reguł przez administratora. |
+
+> ##### Wzorce kontraktu RGL (W1–W10)
+
+---
+
+**W1 — Dyżury Standby**
+> Wynagrodzenie za dyżury gotowości (DS1/DS2/DS3/W/H) i ryczałt miesięczny (Monthly Standby). Używany m.in. przez lekarzy z kontraktami dyżurowymi (Austria).
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Stawka bazowa per zmiana — DS1 / DS2 / DS3 / W/H [€] | Wynagrodzenie za jedną zmianę danego typu dyżuru | DS1: 20, DS2: 20, DS3: 20, W/H: 70 |
+| Stawka per konsultacja w dyżurze — DS1 / DS2 / DS3 / W/H [€] | Dodatkowe wynagrodzenie za każdą konsultację przeprowadzoną w trakcie dyżuru | DS1: 40, DS2: 40, DS3: 45, W/H: 70 |
+| Minimalna liczba slotów per zmiana — DS1 / DS2 / DS3 / W/H | Liczba slotów wymaganych aby zmiana była rozliczana | 1 |
+| Monthly Standby: ryczałt miesięczny [€] lub mnożnik (×) | Stała kwota za gotowość miesięczną LUB mnożnik sumy wszystkich DS danego miesiąca | ×2 lub stała kwota |
+
+---
+
+**W2 — Per konsultacja**
+> Stawki za każdą zakończoną i nieudaną konsultację, opcjonalnie za recepty i typy nocne. Używany m.in. przez lekarzy czeskich i hiszpańskich.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Stawka ended dzień [€] | Za zakończoną konsultację (pora dzienna) | 10 |
+| Stawka ended noc [€] *(opcjonalne)* | Za zakończoną konsultację nocną | 12 |
+| Statusy failed | Lista statusów wizyty kwalifikujących do „failed" | {102, 103, 104} |
+| Stawka failed [€] | Za konsultację nieudaną | 4 |
+| Stawka presc [€] *(opcjonalne)* | Za każdą receptę | 5 |
+| REMPe — stawka [€] *(opcjonalne)* | Dodatek za receptę specjalną (typ REMPe) | 9 |
+| Stawka dyżur nocny (Shifts night) [€] *(opcjonalne)* | Wynagrodzenie za całą zmianę nocną | 50 |
+| Stawka extra ended noc [€] *(opcjonalne)* | Za dodatkową konsultację nocną ponad normę | 12 |
+| Stawka extra failed noc [€] *(opcjonalne)* | Za nieudaną konsultację nocną ponad normę | 6 |
+
+---
+
+**W3 — Extra hours (godzinowy)**
+> Ryczałt za kontraktowe godziny/tydzień + wynagrodzenie za konsultacje po progu i za nadgodziny. Używany m.in. przez lekarzy portugalskich.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Ryczałt miesięczny [€] | Stała kwota za kontraktowy limit godzin tygodniowo | 300 lub 150 |
+| Tygodniowy limit godzin kontraktowych | Godziny objęte ryczałtem | 14 lub 7 |
+| Próg konsultacji wliczonych w ryczałt | Liczba konsultacji bez dodatkowego wynagrodzenia | 20 lub 10 |
+| Stawka ended po progu [€] | Za każdą konsultację zakończoną powyżej progu | 14 |
+| Stawka failed po progu [€] | Za każdą konsultację nieudaną powyżej progu | 6 |
+| Stawka extra hour [€] | Za każdą godzinę powyżej limitu kontraktowego | 5 |
+| Odliczenie za godzinę z konsultacją [€/h] | Koszt godziny zajętej konsultacją — odliczany od nadgodzin | 5 |
+| Stawka presc [€] | Za każdą receptę | 8 |
+
+---
+
+**W4 — Ryczałt dzienny ze schodkami i warunkiem slotów**
+> Ryczałt bazowy + schodki konsultacji dziennych, redukowany proporcjonalnie za dni bez wymaganych slotów. Opcja: osobny ryczałt nocny. Używany m.in. przez lekarzy z kontraktem OPL.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Ryczałt bazowy [€] | Do progu 1 (konsultacji dziennych) | 2700 |
+| Próg 1 (cons) | Górna granica ryczałtu bazowego | 60 |
+| Stawka per cons dzienna — schodek 1 [€] | Za każdą cons między progiem 1 a 2 | 36 |
+| Próg 2 (cons) | Górna granica schodka 1 | 150 |
+| Stawka per cons dzienna — schodek 2 [€] | Za każdą cons powyżej progu 2 | 25 |
+| Stawka presc [€] | Za każdą receptę | 12 |
+| Harmonogram slotów: dni robocze | Wymagane bloki godzinowe w dni powszednie (format HH–HH, UTC±X) | 9–13, 16–20 UTC+1 |
+| Harmonogram slotów: weekend | Wymagane bloki godzinowe w weekend | 9–12, 17–20 UTC+1 |
+| Redukcja proporcjonalna | Ryczałt obcinany proporcjonalnie do liczby dni bez pełnych slotów | tak |
+| *(Opcja nocna)* Ryczałt nocny [€] | Dodatkowy ryczałt za nocne sloty | 1000 |
+| *(Opcja nocna)* Próg cons nocnych | Do progu: ryczałt nocny; powyżej: stawka | 10 |
+| *(Opcja nocna)* Stawka cons nocna [€] | Za każdą nocną cons powyżej progu nocnego | 80 |
+| *(Opcja nocna)* Harmonogram slotów nocnych | Wymagane godziny nocne (każdy dzień miesiąca) | 0–6 |
+
+---
+
+**W5 — Ryczałt uproszczony ze schodkiem i slotami**
+> Jeden próg konsultacji, pełna dostępność całodniowa wymagana, proporcjonalna redukcja za dni bez slotów. Używany m.in. przez lekarzy z kontraktami UAB.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Ryczałt [€] | Do progu konsultacji | 1000 |
+| Próg (cons) | Po przekroczeniu: stawka per cons | 15 |
+| Stawka per cons powyżej progu [€] | | 25 |
+| Harmonogram slotów | Wymagane godziny w każdy dzień miesiąca (UTC±X) | 8–22 UTC+3 |
+| Redukcja proporcjonalna | Ryczałt obcinany proporcjonalnie za dni bez pełnych slotów | tak |
+
+---
+
+**W6 — Ryczałt z dwublokowymi slotami dziennymi**
+> Podobny do W5, ale wymagane dwa bloki godzinowe dziennie (rano i popołudniu). Używany m.in. przez lekarzy Milmedika i KRUPAFARM.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Ryczałt [€] | Do progu konsultacji | 600 lub 450 |
+| Próg (cons) | Po przekroczeniu: stawka per cons | 40 lub 30 |
+| Stawka per cons powyżej progu [€] | | 15 |
+| Blok 1: wymagane godziny slotów | Np. poranny blok | 9–13 |
+| Blok 2: wymagane godziny slotów | Np. popołudniowy blok | 16–20 |
+| Redukcja proporcjonalna | Ryczałt obcinany proporcjonalnie za dni bez pełnych slotów | tak |
+
+---
+
+**W7 — Ryczałt nocny ze schodkiem i slotami**
+> Ryczałt za dyżury nocne + stawka za konsultacje nocne powyżej progu. Warunek: określona liczba nocy tygodniowo z pełnymi slotami.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Ryczałt [€] | Do progu konsultacji nocnych | 520 |
+| Próg (cons) | | 13 |
+| Stawka per cons nocna powyżej progu [€] | | 30 |
+| Wymagana liczba nocy/tydzień z dyżurem nocnym | | 5 |
+| Godziny dyżuru nocnego | | 0:00–7:00 |
+| Stawka presc [€] *(opcjonalne)* | Za każdą receptę | 5 |
+
+---
+
+**W8 — Rozliczenie grupowe z podmiotem zewnętrznym**
+> Kilku lekarzy tworzy grupę rozliczeniową. Podmiot zewnętrzny (np. ubezpieczyciel) płaci część kwoty na podstawie faktury wystawianej przez lekarza głównego — Telemedi wypłaca pozostałość z ryczałtu grupowego.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Ryczałt grupowy [€] | Łączna kwota do wypłaty przez Telemedi dla grupy | 600 |
+| Nazwa podmiotu zewnętrznego | Klient fakturowany przez lekarza głównego grupy | Uniqa |
+| Lekarz główny | Czyje konsultacje są podstawą faktury do klienta zewnętrznego | D. Redzia |
+| Stawka per cons do faktury zewnętrznej [€] | Stawka używana do wyliczenia wartości faktury do klienta | 20 |
+| Wzór rozliczenia Telemedi | Kwota wypłacana przez Telemedi | Ryczałt − wartość faktury zewnętrznej |
+
+---
+
+**W9 — Per recepty**
+> Wynagrodzenie oparte głównie lub wyłącznie na liczbie recept. Trzy tryby: stała stawka, schodkowa lub ryczałt ze schodkiem. Opcja: dodatek RxWhizz. Używany m.in. przez lekarzy UK.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Tryb | `stały` / `schodkowy` / `ryczałt+schodek` | |
+| *Tryb stały:* Stawka presc [€] | Za każdą receptę | 6, 7, 8, 9, 10, 13 |
+| *Tryb schodkowy:* Stawka presc do progu [€] | | 11 lub 8 |
+| *Tryb schodkowy:* Próg recept | | 30 |
+| *Tryb schodkowy:* Stawka presc po progu [€] | | 10 lub 7 |
+| *Tryb ryczałt+schodek:* Ryczałt [€] | Do progu recept | 330 |
+| *Tryb ryczałt+schodek:* Próg recept | | 20 |
+| *Tryb ryczałt+schodek:* Stawka per presc powyżej progu [€] | | 16 |
+| RxWhizz dodatek [€] *(opcjonalne)* | Stały dodatek za każdą receptę wystawioną przez platformę RxWhizz | 5 |
+
+---
+
+**W10 — Mieszany (konsultacje + recepty)**
+> Prosta kombinacja stawki za zakończone konsultacje i/lub recepty.
+
+| Parametr | Opis | Przykładowe wartości |
+|---|---|---|
+| Stawka ended [€] | Za każdą konsultację zakończoną | 20 |
+| Stawka presc [€] *(opcjonalne)* | Za każdą receptę | 8 |
 
 ---
 
@@ -651,8 +799,21 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | **Aktor** | Admin |
 | **Cel** | Określić dla każdego lekarza i każdej jego specjalizacji, czy bonus (RPL-05) ma być uwzględniany przy obliczaniu wynagrodzenia. |
 | **Kontekst** | Domyślnie bonus jest uwzględniany. Admin może wyłączyć bonus dla konkretnej pary lekarz+specjalizacja, jeśli wynika to z warunków umowy lub innych ustaleń. |
-| **Kroki** | 1. Admin wchodzi w profil lekarza → zakładka "Ustawienia rozliczeniowe" <br> 2. Widzi listę specjalizacji przypisanych do lekarza <br> 3. Dla każdej specjalizacji toggle: "Uwzględniaj bonus" (domyślnie: tak) <br> 4. Zapisuje zmiany |
-| **Acceptance Criteria** | ✓ Ustawienie per lekarz + specjalizacja (jeden lekarz może mieć bonus włączony dla specjalizacji A i wyłączony dla B) <br> ✓ Domyślna wartość: bonus uwzględniany <br> ✓ Zmiana skutkuje automatycznym przeliczeniem rozliczenia przy kolejnym imporcie lub na żądanie <br> ✓ Zmiana zalogowana z datą i autorem |
+| **Kroki** | 1. Admin wchodzi w profil lekarza → zakładka "Ustawienia rozliczeniowe" <br> 2. Widzi listę specjalizacji przypisanych do lekarza <br> 3. Dla każdej specjalizacji toggle: "Uwzględniaj bonus" (domyślnie: **nie**) <br> 4. Zapisuje zmiany |
+| **Acceptance Criteria** | ✓ Ustawienie per lekarz + specjalizacja (jeden lekarz może mieć bonus włączony dla specjalizacji A i wyłączony dla B) <br> ✓ Domyślna wartość: bonus **nie** uwzględniany (wymaga jawnego włączenia przez admina) <br> ✓ Zmiana skutkuje automatycznym przeliczeniem rozliczenia przy kolejnym imporcie lub na żądanie <br> ✓ Zmiana zalogowana z datą i autorem |
+| **Priorytet** | **Must Have** |
+
+---
+
+#### US-E11-04 — Sprawdzanie zgodności slotów i redukcja proporcjonalna
+
+| | |
+|--|--|
+| **Aktor** | System (automatycznie przy imporcie wsadu) |
+| **Cel** | Weryfikować, czy lekarz z kontraktem W4/W5/W6/W7 miał wymagane sloty w każdym dniu miesiąca, i proporcjonalnie redukować ryczałt za dni bez pełnych slotów. |
+| **Kontekst** | Wzorce W4, W5, W6, W7 zawierają wymagany harmonogram slotów (godziny, dni, strefa czasowa). Admin konfiguruje harmonogram w E11-01. System przy imporcie Arkusza 6 (Sloty/Dyżury GLOBAL) sprawdza zgodność i oblicza współczynnik dostępności. |
+| **Kroki** | 1. System pobiera z E11 wymagany harmonogram slotów dla lekarza (wzorzec W4/W5/W6/W7) <br> 2. Liczy liczbę dni roboczych i weekendowych w danym miesiącu <br> 3. Dla każdego dnia sprawdza w Arkuszu 6 czy wymagane bloki godzinowe są pokryte slotami <br> 4. Oblicza współczynnik dostępności: (liczba dni z pełnymi slotami) ÷ (liczba dni wymaganych) <br> 5. Mnoży ryczałt bazowy przez współczynnik dostępności <br> 6. Wynik widoczny w szczegółach rozliczenia: ile dni z pełnymi slotami / ile wymaganych |
+| **Acceptance Criteria** | ✓ Dla wzorców W4/W5/W6/W7: ryczałt redukowany proporcjonalnie za dni bez pełnych slotów <br> ✓ Dla W4: osobne liczenie dla dni roboczych i weekendowych (różne harmonogramy) <br> ✓ Dla W4 opcja nocna: osobny współczynnik dostępności nocnej <br> ✓ Współczynnik dostępności widoczny w szczegółach rozliczenia (admin + lekarz) <br> ✓ Liczba dni z pełnymi slotami i liczba wymaganych dni widoczne per rozliczenie <br> ✓ Jeżeli lekarz nie ma slotów w danym miesiącu w Arkuszu 6: ryczałt = 0 z ostrzeżeniem dla admina |
 | **Priorytet** | **Must Have** |
 
 ---
@@ -670,9 +831,35 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
+#### US-E11-05 — Konfiguracja stawki za receptę per lekarz
+
+| | |
+|--|--|
+| **Aktor** | Admin |
+| **Cel** | Ustawić indywidualną stawkę za receptę dla konkretnego lekarza, niezależnie od globalnych parametrów wzorca. Dotyczy zarówno lekarzy PL (RPL-11), jak i GLOBAL (szczególnie W9 i lekarzy z mieszanymi kontraktami). |
+| **Kontekst** | Stawka za receptę jest jednym z najczęściej zróżnicowanych parametrów — lekarze mogą mieć różne stawki nawet w ramach tego samego wzorca kontraktu (np. W9: presc×6, ×7, ×8, ×9, ×10, ×13). Osobne okno ustawień upraszcza zarządzanie bez konieczności edytowania całego wzorca. |
+| **Kroki** | 1. Admin wchodzi w profil lekarza → zakładka „Ustawienia rozliczeniowe" <br> 2. Sekcja „Stawka za receptę" — wyświetla aktualną stawkę (z wzorca lub własną) <br> 3. Admin wpisuje stawkę [€] lub [PLN] dla danego lekarza <br> 4. Zapisuje — stawka indywidualna nadpisuje stawkę z wzorca |
+| **Acceptance Criteria** | ✓ Stawka per receptę konfigurowalna dla każdego lekarza (PL i GLOBAL) <br> ✓ Jeśli ustawiona stawka indywidualna: system używa jej zamiast stawki z wzorca W <br> ✓ Jeśli brak stawki indywidualnej: system używa stawki presc z przypisanego wzorca <br> ✓ Zmiana stawki zalogowana z datą i autorem <br> ✓ Aktualna stawka widoczna w widoku listy lekarzy (kolumna admina) |
+| **Priorytet** | **Must Have** |
+
+---
+
+#### US-E11-06 — Konfiguracja reguł RPL (lekarze polscy)
+
+| | |
+|--|--|
+| **Aktor** | Admin |
+| **Cel** | Skonfigurować stawki i progi dla wszystkich reguł rozliczeniowych lekarzy polskich (RPL-01 do RPL-11), tak aby system automatycznie obliczał wynagrodzenia z Arkuszy 1–4. |
+| **Zakres reguł** | RPL-01: stawka B2C / B2B · RPL-02: stawka dzień roboczy / weekend · RPL-03: stawka bezpośrednia / specjalizacja · RPL-04: dodatek za język obcy · RPL-05: kwota bonusu per wizyta + próg średniej ocen (aktywacja per lekarz+spec w E11-02) · RPL-06: progi mnożników kar (udział wizyt z karami → mnożnik; aktywacja per lekarz+spec w E11-03) · RPL-07: minimalna liczba wizyt z karami do naliczenia kar · RPL-08: stawka no-show · RPL-10: schodki konsultacji (progi i stawki per specjalizacja) · RPL-11: stawka za receptę (nadpisywalna per lekarz w E11-05) |
+| **Acceptance Criteria** | ✓ Każda reguła RPL ma dedykowany formularz edycji z odpowiednimi polami <br> ✓ RPL-02 / RPL-03: stawki mogą różnić się per specjalizacja <br> ✓ RPL-06: konfiguracja progów (% wizyt z karami → mnożnik) działa globalnie, aktywacja per lekarz w E11-03 <br> ✓ Zmiany stawek logowane (data, autor, wartości) <br> ✓ Historia zmian widoczna dla admina |
+| **Priorytet** | **Must Have** |
+| **Notatki** | RPL-09 (stawka godzinowa dyżurów PL) poza zakresem Etapu 1 — brak arkusza dyżurów PL w pliku wsadu. |
+
+---
+
 ## 4. Struktura pliku wsadu (XLSX)
 
-> Admin wgrywa **jeden plik XLSX z ośmioma arkuszami**. Plik zawiera surowe dane źródłowe — aplikacja na ich podstawie oblicza wynagrodzenia zgodnie z regułami skonfigurowanymi w E11. Nie ma arkuszy z gotowymi podsumowaniami — te są generowane przez system.
+> Admin wgrywa **jeden plik XLSX z siedmioma arkuszami**. Plik zawiera surowe dane źródłowe — aplikacja na ich podstawie oblicza wynagrodzenia zgodnie z regułami skonfigurowanymi w E11. Nie ma arkuszy z gotowymi podsumowaniami — te są generowane przez system.
 >
 > **Kolumny identyfikujące (wymagane we wszystkich arkuszach):** `Email lekarza` · `ID lekarza` · `Miesiąc rozliczenia` (format YYYY-MM). Brak którejkolwiek z tych kolumn = błąd importu z jasnym opisem.
 
@@ -731,21 +918,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-### Arkusz 3 — Dyżury PL
-
-> Podstawa do obliczenia wynagrodzenia za dyżury lekarzy polskich (RPL-09: stawka godzinowa).
-
-| # | Kolumna | Uwagi |
-|---|---------|-------|
-| 1 | **Email lekarza** | ✅ Identyfikator |
-| 2 | **ID lekarza** | ✅ Identyfikator |
-| 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
-| 4 | Data dyżuru | |
-| 5 | Liczba godzin | Podstawa do RPL-09 |
-
----
-
-### Arkusz 4 — Recepty PL
+### Arkusz 3 — Recepty PL
 
 > Podstawa do obliczenia wynagrodzenia za recepty lekarzy polskich (RPL-11: stała stawka za receptę).
 
@@ -758,7 +931,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-### Arkusz 5 — Oceny
+### Arkusz 4 — Oceny
 
 > Podstawa do weryfikacji warunku bonusu RPL-05 (średnia ocen ≥ 4,75). Arkusz wspólny — zawiera oceny zarówno dla lekarzy PL, jak i dla lekarzy GLOBAL (jeśli dotyczy).
 
@@ -772,7 +945,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-### Arkusz 6 — Wizyty GLOBAL
+### Arkusz 5 — Wizyty GLOBAL
 
 > Podstawa do obliczeń dla lekarzy zagranicznych: konsultacje zakończone (RGL-01), nieudane (RGL-02), schodki (RGL-04). Kolumny widoczne per kraj określone są w konfiguracji systemu (nie w strukturze pliku wsadu).
 
@@ -799,7 +972,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-### Arkusz 7 — Sloty/Dyżury GLOBAL
+### Arkusz 6 — Sloty/Dyżury GLOBAL
 
 > Podstawa do obliczenia wynagrodzenia za dyżury lekarzy zagranicznych (RGL-06: Monthly Standby, RGL-07: Daily Standby DS1/DS2/DS3/Weekend, RGL-08: ryczałt z progiem dostępności).
 
@@ -817,7 +990,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-### Arkusz 8 — Recepty GLOBAL
+### Arkusz 7 — Recepty GLOBAL
 
 > Podstawa do obliczenia wynagrodzenia za recepty lekarzy zagranicznych (RGL-03: stawka per recepta, RGL-05: schodki recept).
 
@@ -871,10 +1044,15 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | 9 | Jaki system źródłowy dla Etapu 2? | E1b | Do ustalenia (Etap 2) |
 | 10 | Jak długo przechowywać historię zmian statusów? | E8 | Do ustalenia |
 | 11 | Czy emaile systemowe (powiadomienia) mają być dwujęzyczne (PL/EN wg preferencji lekarza)? | E7 | Do ustalenia |
-| 12 | Jakie są pełne obowiązujące reguły RPL i RGL (stawki, progi, edge case'y)? Potrzebne do zaprojektowania szczegółowego układu panelu stawek w E11. | E11 | **Oczekuje na dostarczenie reguł przez administratora** |
-| 13 | Czy przy zmianie stawek w E11 istniejące rozliczenia powinny być automatycznie przeliczone, czy dopiero przy kolejnym imporcie wsadu? | E11, E1 | Do ustalenia |
-| 14 | Czy próg średniej ocen dla bonusu RPL-05 (4,75) jest stały globalnie, czy konfigurowalny per lekarz/specjalizacja w E11? | E11 | Do ustalenia |
-| 15 | Czy arkusz Oceny zawiera oceny tylko dla lekarzy PL (bonus RPL-05), czy także dla GLOBAL? | E1, Arkusz 5 | Do ustalenia |
+| 12 | Czy przy zmianie stawek w E11 istniejące rozliczenia powinny być automatycznie przeliczone, czy dopiero przy kolejnym imporcie wsadu? | E11, E1 | Do ustalenia |
+| 13 | Czy próg średniej ocen dla bonusu RPL-05 (4,75) jest stały globalnie, czy konfigurowalny per lekarz/specjalizacja w E11? | E11 | Do ustalenia |
+| 14 | Czy arkusz Oceny (Arkusz 4) zawiera oceny tylko dla lekarzy PL (bonus RPL-05), czy także dla GLOBAL? | E1, Arkusz 4 | Do ustalenia |
+| 15 | W modelu W8 (rozliczenie grupowe/zewnętrzne — Serbia): czy D. Redzia jest jednym z lekarzy grupy, czy osobnym kontem? Jak dokładnie obliczana jest część każdego lekarza z grupy — równe udziały czy inny klucz podziału? | E11 W8 | **Do wyjaśnienia** |
+| 16 | W modelu W8: czy „Telemedi = 600 − faktura zewnętrzna" to kwota na całą grupę (do podziału), czy per lekarz? | E11 W8 | **Do wyjaśnienia** |
+| 17 | Czy statusy failed {102, 103, 104} są stałe dla wszystkich lekarzy W2, czy konfigurowalne per lekarz? | E11 W2 | Do ustalenia |
+| 18 | W modelu W4 (OPL): jak liczyć proporcjonalną redukcję — per brakujący dzień, czy per brakujący blok godzinowy? | E11 W4, US-E11-04 | Do ustalenia |
+| 19 | Czy stawka indywidualna za receptę z E11-05 nadpisuje stawkę presc tylko w obliczeniach, czy też jest widoczna osobno w szczegółach rozliczenia? | E11-05 | Do ustalenia |
+| 20 | RPL-09 (dyżury godzinowe PL) — czy lekarz Polski może mieć dyżury godzinowe i czy planowane jest dodanie arkusza dyżurów PL w przyszłości, czy ta reguła odpada? | E1, E11-06 | Do ustalenia |
 
 ---
 
@@ -906,3 +1084,15 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | **Etap 2** | Docelowy — integracja z systemem źródłowym (zastąpienie pliku Excel automatycznym pobieraniem danych) |
 | **RPL** | Reguły rozliczeniowe dla lekarzy Polskich |
 | **RGL** | Reguły rozliczeniowe dla lekarzy Globalnych (zagranicznych) |
+| **Wzorzec kontraktu (W1–W10)** | Predefiniowany typ reguły rozliczeniowej przypisywany do lekarza GLOBAL; definiuje logikę i parametry obliczania wynagrodzenia |
+| **REMPe** | Specjalny typ recepty generujący dodatkowe wynagrodzenie dla lekarzy z W2 (dotyczy m.in. Hiszpanii) |
+| **RxWhizz** | Platforma recept UK; recepty RxWhizz mogą generować dodatkowy stały dodatek [€] w W9 |
+| **DS1 / DS2 / DS3** | Typy dyżurów dziennych w modelu Standby (W1); różnią się stawkami bazowymi |
+| **W/H Standby** | Dyżur weekendowy/świąteczny w modelu Standby (W1) |
+| **MS (Monthly Standby)** | Ryczałt miesięczny za gotowość w modelu Standby (W1) |
+| **Ended / Consultations ended** | Konsultacja zakończona sukcesem (status sukcesu) |
+| **Failed / Consultations failed** | Konsultacja zakończona niepowodzeniem (konkretne statusy, np. {102, 103, 104}) |
+| **Redukcja proporcjonalna** | Mechanizm obcinania ryczałtu w W4/W5/W6/W7 proporcjonalnie do dni bez wymaganych slotów |
+| **Współczynnik dostępności** | Wynik obliczenia: (dni z pełnymi slotami) ÷ (dni wymaganych); mnożnik ryczałtu w W4–W7 |
+| **OPL** | Oznaczenie klienta/kontraktu dla grupy lekarzy (UTC+1); obsługiwany przez wzorzec W4 |
+| **UAB** | Oznaczenie klienta/kontraktu dla grupy lekarzy (UTC+3); obsługiwany przez wzorzec W5 |
