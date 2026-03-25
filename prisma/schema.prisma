@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums (SQLite: stored as String) ───────────────────────────────────────
+
+// Role
+// DOCTOR | MAIN_DOCTOR | ADMIN | ACCOUNTING
+
+// DoctorType
+// PL | GLOBAL
+
+// Currency
+// PLN | EUR | GBP
+
+// ModelType
+// A | B | C | C_OPL | D | E | F
+
+// SettlementStatus
+// PENDING_DOCTOR | ACCEPTED_DOCTOR | INVOICE_UPLOADED | ACCEPTED | PAYMENT_SENT
+
+// OcrStatus
+// PENDING | MATCH | MISMATCH | UNREADABLE
+
+// InvoiceStatus
+// UPLOADED | ACCEPTED | REJECTED
+
+// VisitSource / SlotSource
+// PL | GLOBAL
+
+// ImportStatus
+// PENDING | SUCCESS | PARTIAL | FAILED
+
+// Language
+// PL | EN
+
+// ─── Models ──────────────────────────────────────────────────────────────────
+
+model User {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  name             String
+  role             String   @default("DOCTOR") // Role enum
+  passwordHash     String?
+  prefersEmailCode Boolean  @default(false)
+  language         String   @default("EN") // Language enum
+  isActive         Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  doctor    Doctor?
+  authCodes AuthCode[]
+}
+
+model Doctor {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type       String  @default("GLOBAL") // DoctorType enum
+  country    String?
+  externalId String? // ID from source system
+  groupId    String?
+  group      DoctorGroup? @relation(fields: [groupId], references: [id])
+  currency   String  @default("EUR") // Currency enum
+
+  contractModel ContractModel?
+  settlements   Settlement[]
+  visits        Visit[]
+  slots         Slot[]
+  prescriptions Prescription[]
+  ratings       Rating[]
+}
+
+model DoctorGroup {
+  id      String   @id @default(cuid())
+  name    String
+  doctors Doctor[]
+}
+
+model ContractModel {
+  id        String   @id @default(cuid())
+  doctorId  String   @unique
+  doctor    Doctor   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  model     String   // ModelType enum: A | B | C | C_OPL | D | E | F
+  params    String   // JSON string of model-specific parameters
+  updatedAt DateTime @updatedAt
+  createdBy String
+}
+
+model Settlement {
+  id           String    @id @default(cuid())
+  doctorId     String
+  doctor       Doctor    @relation(fields: [doctorId], references: [id])
+  month        String    // "2026-01"
+  status       String    @default("PENDING_DOCTOR") // SettlementStatus enum
+  amounts      String    @default("{}") // JSON breakdown of calculated amounts
+  currency     String    @default("EUR")
+  totalLocal   Float     @default(0) // in doctor's currency
+  totalPln     Float     @default(0) // converted to PLN
+  additionalCosts Float  @default(0)
+  deductions   Float     @default(0)
+  notes        String?
+  invoice      Invoice?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  acceptedAt   DateTime?
+  transferDate DateTime?
+
+  @@unique([doctorId, month])
+}
+
+model Visit {
+  id             String   @id @default(cuid())
+  doctorId       String
+  doctor         Doctor   @relation(fields: [doctorId], references: [id])
+  month          String
+  visitDate      DateTime
+  startDate      DateTime?
+  endDate        DateTime?
+  specialization String?
+  visitType      String?
+  bu             String?  // B2C | B2B
+  clinic         String?
+  patient        String?
+  language       String?
+  noShow         Boolean  @default(false)
+  directBooking  Boolean  @default(false)
+  delayMinutes   Int      @default(0)
+  hasPenalty     Boolean  @default(false)
+  penaltyAmount  Float    @default(0)
+  baseRate       Float?
+  // GLOBAL-only
+  source         String   @default("GLOBAL") // VisitSource: PL | GLOBAL
+  visitStatus    String?  // ended | failed
+  dayType        String?  // day/night, weekday/weekend
+  visitLanguage  String?
+}
+
+model Slot {
+  id          String    @id @default(cuid())
+  doctorId    String
+  doctor      Doctor    @relation(fields: [doctorId], references: [id])
+  month       String
+  externalId  String    // ID slotu from source system
+  createdAt   DateTime  // when doctor created slot
+  startAt     DateTime
+  endAt       DateTime
+  visitDate   DateTime? // linked visit date (optional)
+  source      String    @default("GLOBAL") // SlotSource: PL | GLOBAL
+  country     String?
+}
+
+model Prescription {
+  id       String @id @default(cuid())
+  doctorId String
+  doctor   Doctor @relation(fields: [doctorId], references: [id])
+  month    String
+  count    Int    @default(0)
+  country  String?
+  source   String @default("GLOBAL")
+}
+
+model Rating {
+  id             String @id @default(cuid())
+  doctorId       String
+  doctor         Doctor @relation(fields: [doctorId], references: [id])
+  month          String
+  specialization String?
+  avgRating      Float
+}
+
+model Invoice {
+  id           String    @id @default(cuid())
+  settlementId String    @unique
+  settlement   Settlement @relation(fields: [settlementId], references: [id])
+  filename     String
+  filePath     String
+  ocrAmount    Float?
+  ocrStatus    String    @default("PENDING") // OcrStatus
+  status       String    @default("UPLOADED") // InvoiceStatus
+  uploadedAt   DateTime  @default(now())
+  processedAt  DateTime?
+  rejectionNote String?
+}
+
+model AuthCode {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model ImportLog {
+  id         String   @id @default(cuid())
+  month      String
+  filename   String
+  status     String   @default("PENDING") // ImportStatus
+  rowCounts  String?  // JSON
+  errors     String?  // JSON array of error strings
+  importedAt DateTime @default(now())
+  importedBy String
+}
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  currency  String   // EUR | GBP
+  rate      Float    // to PLN
+  validFrom DateTime
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@unique([currency, validFrom])
+}
