@@ -1,7 +1,7 @@
 # PRD — Aplikacja Rozliczeniowa dla Lekarzy
 
-**Wersja:** 1.4 — Draft
-**Data:** 2026-03-24
+**Wersja:** 1.5 — Draft
+**Data:** 2026-03-25
 **Status:** Do przeglądu
 
 ---
@@ -635,163 +635,199 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | | |
 |--|--|
 | **Aktor** | Admin |
-| **Cel** | Przypisać każdemu lekarzowi zagranicznemu wzorzec kontraktu (W1–W10) wraz z parametrami, tak aby system mógł automatycznie obliczyć wynagrodzenie z danych wsadu. |
-| **Mechanizm** | Admin wybiera jeden z 10 wzorców i uzupełnia jego parametry dla danego lekarza. Formularz pokazuje tylko pola właściwe dla wybranego wzorca (dynamiczny formularz). |
+| **Cel** | Przypisać każdemu lekarzowi zagranicznemu model kontraktu (A–F) wraz z parametrami, tak aby system mógł automatycznie obliczyć wynagrodzenie z danych wsadu. |
+| **Mechanizm** | Admin wybiera jeden z 6 modeli i uzupełnia jego parametry dla danego lekarza. Formularz pokazuje tylko pola właściwe dla wybranego wzorca (dynamiczny formularz). |
 | **Funkcja „Kopiuj z lekarza"** | Przy przypisywaniu wzorca admin może wybrać innego lekarza z listy — system kopiuje wzorzec i wszystkie parametry. Przydatne gdy wielu lekarzy ma identyczne reguły (np. „jak Caroline Seeberger"). |
-| **Acceptance Criteria** | ✓ Admin może wybrać jeden z 10 wzorców dla każdego lekarza GLOBAL <br> ✓ Formularz parametrów jest dynamiczny — pokazuje tylko pola dla wybranego wzorca <br> ✓ Funkcja „Kopiuj z lekarza" — kopiuje wzorzec i parametry, admin może edytować kopię <br> ✓ Wszystkie zmiany parametrów logowane (data, autor, wartość poprzednia/nowa) <br> ✓ System stosuje parametry aktualne w momencie importu wsadu |
+| **Acceptance Criteria** | ✓ Admin może wybrać jeden z 6 modeli dla każdego lekarza GLOBAL <br> ✓ Formularz parametrów jest dynamiczny — pokazuje tylko pola dla wybranego wzorca <br> ✓ Funkcja „Kopiuj z lekarza" — kopiuje wzorzec i parametry, admin może edytować kopię <br> ✓ Wszystkie zmiany parametrów logowane (data, autor, wartość poprzednia/nowa) <br> ✓ System stosuje parametry aktualne w momencie importu wsadu |
 | **Priorytet** | **Must Have** |
 
-> ##### Wzorce kontraktu RGL (W1–W10)
+> ##### Modele kontraktu RGL (A–F)
 
 ---
 
-**W1 — Dyżury Standby**
-> Wynagrodzenie za dyżury gotowości (DS1/DS2/DS3/W/H) i ryczałt miesięczny (Monthly Standby). Używany m.in. przez lekarzy z kontraktami dyżurowymi (Austria).
+**Model A — Per consultation / prescription**
 
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Stawka bazowa per zmiana — DS1 / DS2 / DS3 / W/H [€] | Wynagrodzenie za jedną zmianę danego typu dyżuru | DS1: 20, DS2: 20, DS3: 20, W/H: 70 |
-| Stawka per konsultacja w dyżurze — DS1 / DS2 / DS3 / W/H [€] | Dodatkowe wynagrodzenie za każdą konsultację przeprowadzoną w trakcie dyżuru | DS1: 40, DS2: 40, DS3: 45, W/H: 70 |
-| Minimalna liczba slotów per zmiana — DS1 / DS2 / DS3 / W/H | Liczba slotów wymaganych aby zmiana była rozliczana | 1 |
-| Monthly Standby: ryczałt miesięczny [€] lub mnożnik (×) | Stała kwota za gotowość miesięczną LUB mnożnik sumy wszystkich DS danego miesiąca | ×2 lub stała kwota |
+Pola:
+- Rate per ended consultation (€/£): liczba
+- Rate per ended consultation [night] (€/£): liczba *(opcjonalne — jeśli różna stawka nocna)*
+- Rate per failed consultation (€/£): liczba
+- Rate per prescription (€/£): liczba
+- REMPe (fixed monthly bonus, €/£): liczba *(opcjonalne)*
+- Night shifts rate (per shift, €/£): liczba *(opcjonalne — dla Hiszpanii)*
+- Extra ended night rate (€/£): liczba *(opcjonalne)*
+- Extra failed night rate (€/£): liczba *(opcjonalne)*
 
----
-
-**W2 — Per konsultacja**
-> Stawki za każdą zakończoną i nieudaną konsultację, opcjonalnie za recepty i typy nocne. Używany m.in. przez lekarzy czeskich i hiszpańskich.
-
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Stawka ended dzień [€] | Za zakończoną konsultację (pora dzienna) | 10 |
-| Stawka ended noc [€] *(opcjonalne)* | Za zakończoną konsultację nocną | 12 |
-| Statusy failed | Lista statusów wizyty kwalifikujących do „failed" | {102, 103, 104} |
-| Stawka failed [€] | Za konsultację nieudaną | 4 |
-| Stawka presc [€] *(opcjonalne)* | Za każdą receptę | 5 |
-| REMPe — stawka [€] *(opcjonalne)* | Dodatek za receptę specjalną (typ REMPe) | 9 |
-| Stawka dyżur nocny (Shifts night) [€] *(opcjonalne)* | Wynagrodzenie za całą zmianę nocną | 50 |
-| Stawka extra ended noc [€] *(opcjonalne)* | Za dodatkową konsultację nocną ponad normę | 12 |
-| Stawka extra failed noc [€] *(opcjonalne)* | Za nieudaną konsultację nocną ponad normę | 6 |
+Formuła:
+```
+Total = ended_day * rate_ended
+      + ended_night * rate_ended_night
+      + failed * rate_failed
+      + prescriptions * rate_presc
+      + night_shifts * rate_night_shift
+      + extra_ended_night * rate_extra_ended_night
+      + extra_failed_night * rate_extra_failed_night
+      + REMPe
+```
 
 ---
 
-**W3 — Extra hours (godzinowy)**
-> Ryczałt za kontraktowe godziny/tydzień + wynagrodzenie za konsultacje po progu i za nadgodziny. Używany m.in. przez lekarzy portugalskich.
+**Model B — Base fee + per consultation (threshold)**
 
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Ryczałt miesięczny [€] | Stała kwota za kontraktowy limit godzin tygodniowo | 300 lub 150 |
-| Tygodniowy limit godzin kontraktowych | Godziny objęte ryczałtem | 14 lub 7 |
-| Próg konsultacji wliczonych w ryczałt | Liczba konsultacji bez dodatkowego wynagrodzenia | 20 lub 10 |
-| Stawka ended po progu [€] | Za każdą konsultację zakończoną powyżej progu | 14 |
-| Stawka failed po progu [€] | Za każdą konsultację nieudaną powyżej progu | 6 |
-| Stawka extra hour [€] | Za każdą godzinę powyżej limitu kontraktowego | 5 |
-| Odliczenie za godzinę z konsultacją [€/h] | Koszt godziny zajętej konsultacją — odliczany od nadgodzin | 5 |
-| Stawka presc [€] | Za każdą receptę | 8 |
+Pola:
+- Base fee (€/£): liczba
+- Consultation threshold (included in base): liczba
+- Rate per consultation above threshold (€/£): liczba
+- Count failed as consultations?: checkbox *(tak = no-show liczy się jak wizyta)*
+- Rate per prescription (€/£): liczba *(opcjonalne)*
+- RxWhizz bonus (€/£): liczba *(opcjonalne — Holandia)*
+- Schedule condition required?: checkbox
+  - *Jeśli tak →* Required slot coverage: pole tekstowe opisowe *(np. "daily 8:00–22:00 UTC+3")* — informacja do weryfikacji grafiku
+  - *Jeśli tak →* Proration if not met: checkbox *(tak = proporcjonalne zmniejszenie base fee)*
 
----
-
-**W4 — Ryczałt dzienny ze schodkami i warunkiem slotów**
-> Ryczałt bazowy + schodki konsultacji dziennych, redukowany proporcjonalnie za dni bez wymaganych slotów. Opcja: osobny ryczałt nocny. Używany m.in. przez lekarzy z kontraktem OPL.
-
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Ryczałt bazowy [€] | Do progu 1 (konsultacji dziennych) | 2700 |
-| Próg 1 (cons) | Górna granica ryczałtu bazowego | 60 |
-| Stawka per cons dzienna — schodek 1 [€] | Za każdą cons między progiem 1 a 2 | 36 |
-| Próg 2 (cons) | Górna granica schodka 1 | 150 |
-| Stawka per cons dzienna — schodek 2 [€] | Za każdą cons powyżej progu 2 | 25 |
-| Stawka presc [€] | Za każdą receptę | 12 |
-| Harmonogram slotów: dni robocze | Wymagane bloki godzinowe w dni powszednie (format HH–HH, UTC±X) | 9–13, 16–20 UTC+1 |
-| Harmonogram slotów: weekend | Wymagane bloki godzinowe w weekend | 9–12, 17–20 UTC+1 |
-| Redukcja proporcjonalna | Ryczałt obcinany proporcjonalnie do liczby dni bez pełnych slotów | tak |
-| *(Opcja nocna)* Ryczałt nocny [€] | Dodatkowy ryczałt za nocne sloty | 1000 |
-| *(Opcja nocna)* Próg cons nocnych | Do progu: ryczałt nocny; powyżej: stawka | 10 |
-| *(Opcja nocna)* Stawka cons nocna [€] | Za każdą nocną cons powyżej progu nocnego | 80 |
-| *(Opcja nocna)* Harmonogram slotów nocnych | Wymagane godziny nocne (każdy dzień miesiąca) | 0–6 |
+Formuła:
+```
+base = IF(schedule_met, base_fee, base_fee * (days_covered / total_days))
+Total = base
+      + MAX(0, consultations - threshold) * rate_above
+      + prescriptions * rate_presc
+      + rxwhizz_count * rxwhizz_rate
+```
 
 ---
 
-**W5 — Ryczałt uproszczony ze schodkiem i slotami**
-> Jeden próg konsultacji, pełna dostępność całodniowa wymagana, proporcjonalna redukcja za dni bez slotów. Używany m.in. przez lekarzy z kontraktami UAB.
+**Model C — Base fee + per consultation + prescriptions (z progami)**
 
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Ryczałt [€] | Do progu konsultacji | 1000 |
-| Próg (cons) | Po przekroczeniu: stawka per cons | 15 |
-| Stawka per cons powyżej progu [€] | | 25 |
-| Harmonogram slotów | Wymagane godziny w każdy dzień miesiąca (UTC±X) | 8–22 UTC+3 |
-| Redukcja proporcjonalna | Ryczałt obcinany proporcjonalnie za dni bez pełnych slotów | tak |
+Jak Model B plus:
+- Prescription rate (€/£): liczba
+- Night consultations included?: checkbox
+  - *Jeśli tak →* Night base fee (€/£): liczba
+  - *Jeśli tak →* Night threshold: liczba
+  - *Jeśli tak →* Night rate above threshold (€/£): liczba
 
----
+**Specjalny wariant: Czechy OPL (Model G)**
+- Daytime base fee (€/£): liczba
+- Daytime tier 1 threshold: liczba *(np. 60)*
+- Daytime tier 1 rate (€/£): liczba *(np. 36)*
+- Daytime tier 2 threshold: liczba *(np. 150)*
+- Daytime tier 2 rate (€/£): liczba *(np. 25)*
+- Night base fee (€/£): liczba
+- Night threshold: liczba *(np. 10)*
+- Night rate above threshold (€/£): liczba
+- Prescription rate (€/£): liczba
+- Schedule condition: weekdays slots required *(np. "9–13 and 16–20")*
+- Schedule condition: weekend slots required *(np. "9–12 and 17–20")*
+- Proration if not met: checkbox
 
-**W6 — Ryczałt z dwublokowymi slotami dziennymi**
-> Podobny do W5, ale wymagane dwa bloki godzinowe dziennie (rano i popołudniu). Używany m.in. przez lekarzy Milmedika i KRUPAFARM.
-
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Ryczałt [€] | Do progu konsultacji | 600 lub 450 |
-| Próg (cons) | Po przekroczeniu: stawka per cons | 40 lub 30 |
-| Stawka per cons powyżej progu [€] | | 15 |
-| Blok 1: wymagane godziny slotów | Np. poranny blok | 9–13 |
-| Blok 2: wymagane godziny slotów | Np. popołudniowy blok | 16–20 |
-| Redukcja proporcjonalna | Ryczałt obcinany proporcjonalnie za dni bez pełnych slotów | tak |
-
----
-
-**W7 — Ryczałt nocny ze schodkiem i slotami**
-> Ryczałt za dyżury nocne + stawka za konsultacje nocne powyżej progu. Warunek: określona liczba nocy tygodniowo z pełnymi slotami.
-
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Ryczałt [€] | Do progu konsultacji nocnych | 520 |
-| Próg (cons) | | 13 |
-| Stawka per cons nocna powyżej progu [€] | | 30 |
-| Wymagana liczba nocy/tydzień z dyżurem nocnym | | 5 |
-| Godziny dyżuru nocnego | | 0:00–7:00 |
-| Stawka presc [€] *(opcjonalne)* | Za każdą receptę | 5 |
+Formuła Czechy OPL:
+```
+day_total = IF(cons_day <= tier1, base_day,
+             IF(cons_day <= tier2, base_day + (cons_day - tier1) * rate_tier1,
+                base_day + (tier2 - tier1) * rate_tier1 + (cons_day - tier2) * rate_tier2))
+           * schedule_proration_factor
+night_total = IF(cons_night <= night_threshold, night_base_fee,
+               night_base_fee + (cons_night - night_threshold) * rate_night_above)
+             * schedule_proration_factor
+Total = day_total + night_total + prescriptions * rate_presc
+```
 
 ---
 
-**W8 — Rozliczenie grupowe z podmiotem zewnętrznym**
-> Kilku lekarzy tworzy grupę rozliczeniową. Na podstawie łącznej liczby zakończonych konsultacji całej grupy wyliczana jest faktura do podmiotu zewnętrznego (np. ubezpieczyciela) — Telemedi wypłaca grupie pozostałość z ryczałtu.
+**Model D — Standby (extra hours) + per consultation (Portugalia)**
 
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Ryczałt grupowy [€] | Łączna kwota do wypłaty przez Telemedi dla grupy | 600 |
-| Nazwa podmiotu zewnętrznego | Klient fakturowany na podstawie konsultacji grupy | Uniqa |
-| Stawka per cons do faktury zewnętrznej [€] | Za każdą zakończoną konsultację sumarycznie w grupie | 20 |
-| Wzór faktury do podmiotu zewnętrznego | Invoice_zewnętrzna = stawka × suma ended całej grupy | ended_grupa × 20 |
-| Wzór rozliczenia Telemedi | Kwota do wypłaty przez Telemedi | Ryczałt − Invoice_zewnętrzna |
+Pola:
+- Extra hour rate (€/£): liczba *(np. 5)*
+- Rate per ended consultation (€/£): liczba *(np. 14)*
+- Rate per failed consultation (€/£): liczba *(np. 6)*
+- Prescription rate (€/£): liczba *(opcjonalne)*
+- Monthly base fee included?: checkbox
+  - *Jeśli tak →* Base fee amount (€/£): liczba
+  - *Jeśli tak →* Consultations included in base: liczba
+  - *Jeśli tak →* Failed count inside standby first?: checkbox *(logika Jorge: do limitu liczymy najpierw ended, potem failed)*
 
----
+Formuła podstawowa (Andreia, Juliano):
+```
+Total = extra_hours * rate_hour
+      + extra_ended * rate_ended
+      + extra_failed * rate_failed
+      - hours_with_consultations * rate_hour
+      + prescriptions * rate_presc
+```
 
-**W9 — Per recepty**
-> Wynagrodzenie oparte głównie lub wyłącznie na liczbie recept. Trzy tryby: stała stawka, schodkowa lub ryczałt ze schodkiem. Opcja: dodatek RxWhizz. Używany m.in. przez lekarzy UK.
-
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Tryb | `stały` / `schodkowy` / `ryczałt+schodek` | |
-| *Tryb stały:* Stawka presc [€] | Za każdą receptę | 6, 7, 8, 9, 10, 13 |
-| *Tryb schodkowy:* Stawka presc do progu [€] | | 11 lub 8 |
-| *Tryb schodkowy:* Próg recept | | 30 |
-| *Tryb schodkowy:* Stawka presc po progu [€] | | 10 lub 7 |
-| *Tryb ryczałt+schodek:* Ryczałt [€] | Do progu recept | 330 |
-| *Tryb ryczałt+schodek:* Próg recept | | 20 |
-| *Tryb ryczałt+schodek:* Stawka per presc powyżej progu [€] | | 16 |
-| RxWhizz dodatek [€] *(opcjonalne)* | Stały dodatek za każdą receptę wystawioną przez platformę RxWhizz | 5 |
-
----
-
-**W10 — Mieszany (konsultacje + recepty)**
-> Prosta kombinacja stawki za zakończone konsultacje i/lub recepty.
-
-| Parametr | Opis | Przykładowe wartości |
-|---|---|---|
-| Stawka ended [€] | Za każdą konsultację zakończoną | 20 |
-| Stawka presc [€] *(opcjonalne)* | Za każdą receptę | 8 |
+Formuła z base fee (Jorge, Maria, Nádia, Sarah):
+```
+cons_total = ended + failed
+base_part = IF(cons_total <= threshold, base_fee,
+              base_fee + MAX(0, ended - threshold) * rate_ended
+                       + MAX(0, failed - MAX(0, threshold - ended)) * rate_failed)
+standby_part = extra_hours * rate_hour
+             + extra_ended * rate_ended
+             + extra_failed * rate_failed
+             - hours_with_consultations * rate_hour
+Total = base_part + standby_part + prescriptions * rate_presc - deduction
+```
 
 ---
 
+**Model E — Group pool (Serbia)**
+
+Pola:
+- Pool amount per month (€/£): liczba *(np. 600)*
+- Rate per ended consultation for invoice (€/£): liczba *(np. 20)* — kwota na fakturze do klienta (Uniqa)
+- Linked accounts: lista lekarzy w grupie *(dziedziczone z sekcji 1)*
+
+Formuła:
+```
+Invoice to client = SUM(all_ended) * rate_per_cons
+Invoice to Telemedi = pool_amount - invoice_to_client
+Total paid to group = pool_amount
+```
+
+Wyświetlane osobno: "Invoice to client (Uniqa)" i "Invoice to Telemedi (our payment)".
+
+---
+
+**Model F — Austria standby**
+
+Austria ma unikalny system zmian. Konfiguracja per lekarz:
+
+*Monthly Standby (toggle):*
+- Enabled: checkbox
+- Schedule: pole tekstowe *(np. "18:00 to 22:00")*
+- Monthly fixed amount (€): liczba *(np. 540)*
+- Required shifts for full payout: liczba *(np. 12 — jeśli 0 lub puste = brak warunku)*
+- Included consultations in fixed amount: liczba
+
+*Daily Standby 1 / 2 / 3 (każdy osobno toggle):*
+- Enabled: checkbox
+- Schedule: pole tekstowe *(np. "07:00–12:00")*
+- Standby rate per shift (€): liczba *(np. 20)*
+- Consultation rate (€): liczba *(np. 40)*
+- Standby included in first consultation: checkbox *(DS1/DS2 = tak, DS3 = nie)*
+
+*Weekend/Holiday Standby (toggle):*
+- Enabled: checkbox
+- Schedule: *(np. "07:00 to 22:00")*
+- Standby rate per shift (€): liczba *(np. 70)*
+- Consultation rate per extra consultation (€): liczba *(np. 70)*
+- Included consultations in standby: liczba *(np. 1)*
+
+Formuły:
+```
+DS1/DS2: total = (shifts * standby_rate) + (consultations * cons_rate) - (days_with_cons * standby_rate)
+DS3:     total = (shifts * standby_rate) + (consultations * cons_rate)
+W/H:     total = (shifts * standby_rate) + (consultations * cons_rate) - (days_with_cons * standby_rate)
+Monthly: total = IF(required_shifts > 0, (actual_shifts / required_shifts) * fixed_amount, fixed_amount)
+```
+
+---
+
+**Sekcja wspólna: Additional / deductions (wszystkie modele)**
+
+- Additional costs (€/£): liczba — ręczne wpisanie przez admina per miesiąc
+- Other deductions (€/£): liczba — ręczne wpisanie przez admina per miesiąc
+- Notes: pole tekstowe
+
+---
 #### US-E11-02 — Ustawienia bonusów per lekarz i specjalizacja
 
 | | |
@@ -805,19 +841,49 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 
 ---
 
-#### US-E11-04 — Sprawdzanie zgodności slotów i redukcja proporcjonalna
+#### US-E11-04 — Weryfikacja grafiku (Schedule Verification)
 
 | | |
 |--|--|
-| **Aktor** | System (automatycznie przy imporcie wsadu) |
-| **Cel** | Weryfikować, czy lekarz z kontraktem W4/W5/W6/W7 miał wymagane sloty w każdym dniu miesiąca, i proporcjonalnie redukować ryczałt za dni bez pełnych slotów. |
-| **Kontekst** | Wzorce W4, W5, W6, W7 zawierają wymagany harmonogram slotów (godziny, dni, strefa czasowa). Admin konfiguruje harmonogram w E11-01. System przy imporcie Arkusza 6 (Sloty/Dyżury GLOBAL) sprawdza zgodność i oblicza współczynnik dostępności. |
-| **Kroki** | 1. System pobiera z E11 wymagany harmonogram slotów dla lekarza (wzorzec W4/W5/W6/W7) <br> 2. Liczy liczbę dni roboczych i weekendowych w danym miesiącu <br> 3. Dla każdego dnia sprawdza w Arkuszu 6 czy wymagane bloki godzinowe są pokryte slotami <br> 4. Oblicza współczynnik dostępności: (liczba dni z pełnymi slotami) ÷ (liczba dni wymaganych) <br> 5. Mnoży ryczałt bazowy przez współczynnik dostępności <br> 6. Wynik widoczny w szczegółach rozliczenia: ile dni z pełnymi slotami / ile wymaganych |
-| **Acceptance Criteria** | ✓ Dla wzorców W4/W5/W6/W7: ryczałt redukowany proporcjonalnie za dni bez pełnych slotów <br> ✓ Dla W4: osobne liczenie dla dni roboczych i weekendowych (różne harmonogramy) <br> ✓ Dla W4 opcja nocna: osobny współczynnik dostępności nocnej <br> ✓ Współczynnik dostępności widoczny w szczegółach rozliczenia (admin + lekarz) <br> ✓ Liczba dni z pełnymi slotami i liczba wymaganych dni widoczne per rozliczenie <br> ✓ Jeżeli lekarz nie ma slotów w danym miesiącu w Arkuszu 6: ryczałt = 0 z ostrzeżeniem dla admina |
+| **Aktor** | Admin / System |
+| **Cel** | Sprawdzić, czy lekarz miał wymagane sloty w każdym dniu miesiąca, zidentyfikować brakujące i nadmiarowe godziny, oraz wyliczyć współczynnik proporcji (proration factor) stosowany do ryczałtu. |
+| **Kontekst** | Dostępna z widoku szczegółów rozliczenia lub jako osobna zakładka. System pobiera dane z grafiku (API — do podłączenia) i dla danego lekarza i miesiąca wykonuje poniższe sprawdzenia. |
+
+**Co jest sprawdzane:**
+- Czy lekarz ma sloty we wszystkich wymaganych godzinach (zgodnie z konfiguracją "Required slot coverage" w ustawieniach modelu)
+- Godziny brakujące — np. *"Missing 1h on 2026-01-15 in shift DS1 (07:00–12:00)"*
+- Godziny nadmiarowe / nieprzypisane do żadnej zmiany — np. *"Unassigned hours on 2026-01-20: 12:30–13:00"*
+
+**Wyświetlanie alertów:**
+- Zielona ikona: *"All required slots covered"*
+- Żółty alert: *"Warning: missing X hours in [shift name] — proration will be applied"*
+- Szary alert: *"Info: X unassigned hours detected — not counted in any standby"*
+
+**Tabela grafiku:**
+
+| Kolumna | Opis |
+|---|---|
+| Date | Data |
+| Shift type | Typ zmiany (DS1/DS2/DS3/W/H/Monthly) |
+| Hours planned | Godziny wymagane wg konfiguracji |
+| Hours covered | Godziny faktycznie pokryte slotami |
+| Status | OK / Missing / Partial |
+| Consultations in this shift | Liczba konsultacji w tej zmianie |
+
+Podsumowanie na dole tabeli: łączna liczba godzin per typ zmiany, współczynnik proporcji (proration factor).
+
+| **Acceptance Criteria** | |
+|--|--|
+| ✓ | Alerty wyświetlane zgodnie z wynikiem weryfikacji (zielony / żółty / szary) |
+| ✓ | Tabela grafiku dostępna z poziomu szczegółów rozliczenia oraz jako osobna zakładka |
+| ✓ | Proration factor obliczany i widoczny per rozliczenie (admin + lekarz) |
+| ✓ | Brakujące godziny identyfikowane per dzień i per zmiana z dokładnością co do godziny |
+| ✓ | Nieprzypisane godziny (unassigned) flagowane informacyjnie, bez wpływu na proration |
+| ✓ | Jeśli lekarz nie ma slotów w danym miesiącu: ryczałt = 0 z ostrzeżeniem dla admina |
+| ✓ | Integracja z API grafiku — podłączana w późniejszym etapie; do MVP: dane z Arkusza 6 (Sloty/Dyżury GLOBAL) |
 | **Priorytet** | **Must Have** |
 
 ---
-
 #### US-E11-03 — Ustawienia mnożników kar per lekarz i specjalizacja
 
 | | |
