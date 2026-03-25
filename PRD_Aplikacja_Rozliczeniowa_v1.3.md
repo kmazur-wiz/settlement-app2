@@ -1,6 +1,6 @@
 # PRD — Aplikacja Rozliczeniowa dla Lekarzy
 
-**Wersja:** 1.5 — Draft
+**Wersja:** 1.6 — Draft
 **Data:** 2026-03-25
 **Status:** Do przeglądu
 
@@ -214,7 +214,7 @@ Nowa aplikacja rozwiązuje te problemy poprzez:
 | **Aktor** | Admin |
 | **Cel** | Wgrać surowe dane źródłowe za dany miesiąc (wszystkie arkusze naraz), aby system mógł automatycznie wyliczyć wynagrodzenia i udostępnić je lekarzom. |
 | **Kroki** | 1. Admin wchodzi w sekcję "Dane rozliczeń" <br> 2. Wybiera miesiąc rozliczeniowy <br> 3. Wgrywa plik XLSX (jeden plik z wieloma arkuszami) <br> 4. System waliduje strukturę pliku (czy wymagane arkusze i kolumny identyfikujące są obecne) <br> 5. System importuje dane, przypisuje rekordy do kont lekarzy na podstawie Email + ID lekarza <br> 6. System oblicza wynagrodzenia na podstawie reguł skonfigurowanych w E11 <br> 7. Wyliczone rozliczenia stają się widoczne dla lekarzy <br> 8. Admin widzi podsumowanie importu: liczba rekordów per arkusz, ostrzeżenia o niedopasowanych rekordach, lista ewentualnych błędów obliczeniowych |
-| **Acceptance Criteria** | ✓ System akceptuje plik XLSX z arkuszami: Wizyty PL, Sloty PL, Recepty PL, Oceny, Wizyty GLOBAL, Sloty/Dyżury GLOBAL, Recepty GLOBAL <br> ✓ Brakujące wymagane kolumny identyfikujące (Email lekarza, ID lekarza, Miesiąc rozliczenia) skutkują błędem importu z jasnym opisem <br> ✓ Ponowne wgranie dla tego samego miesiąca nadpisuje dane i przelicza wynagrodzenia od nowa <br> ✓ Rekordy niedopasowane do żadnego konta lekarza są widoczne jako ostrzeżenia (import nie jest blokowany) <br> ✓ System stosuje reguły obliczeniowe skonfigurowane w E11 (stawki, bonusy, mnożniki kar) <br> ✓ Ustawienia per lekarz + specjalizacja z E11 (bonusy tak/nie, mnożniki kar tak/nie) uwzględniane przy obliczeniach |
+| **Acceptance Criteria** | ✓ System akceptuje plik XLSX z arkuszami: Wizyty PL, Sloty PL, Recepty PL, Oceny, Wizyty GLOBAL, Sloty GLOBAL, Recepty GLOBAL <br> ✓ Brakujące wymagane kolumny identyfikujące (Email lekarza, ID lekarza, Miesiąc rozliczenia) skutkują błędem importu z jasnym opisem <br> ✓ Ponowne wgranie dla tego samego miesiąca nadpisuje dane i przelicza wynagrodzenia od nowa <br> ✓ Rekordy niedopasowane do żadnego konta lekarza są widoczne jako ostrzeżenia (import nie jest blokowany) <br> ✓ System stosuje reguły obliczeniowe skonfigurowane w E11 (stawki, bonusy, mnożniki kar) <br> ✓ Ustawienia per lekarz + specjalizacja z E11 (bonusy tak/nie, mnożniki kar tak/nie) uwzględniane przy obliczeniach |
 | **Priorytet** | **Must Have** |
 
 ---
@@ -880,7 +880,7 @@ Podsumowanie na dole tabeli: łączna liczba godzin per typ zmiany, współczynn
 | ✓ | Brakujące godziny identyfikowane per dzień i per zmiana z dokładnością co do godziny |
 | ✓ | Nieprzypisane godziny (unassigned) flagowane informacyjnie, bez wpływu na proration |
 | ✓ | Jeśli lekarz nie ma slotów w danym miesiącu: ryczałt = 0 z ostrzeżeniem dla admina |
-| ✓ | Integracja z API grafiku — podłączana w późniejszym etapie; do MVP: dane z Arkusza 6 (Sloty/Dyżury GLOBAL) |
+| ✓ | Integracja z API grafiku — podłączana w późniejszym etapie; do MVP: dane z Arkusza 6 (Sloty GLOBAL) |
 | **Priorytet** | **Must Have** |
 
 ---
@@ -954,6 +954,7 @@ Podsumowanie na dole tabeli: łączna liczba godzin per typ zmiany, współczynn
 | 15 | Opóźnienie [min.] | |
 | 16 | Kara | tak / nie |
 | 17 | Kwota kary | Kwota jednostkowa kary przed zastosowaniem mnożnika |
+| 18 | Stawka [PLN] | Stawka bazowa wizyty z systemu źródłowego — używana do cross-check z obliczeniami E11 |
 
 **Kolumny wyliczane przez system (nie w pliku):**
 
@@ -972,15 +973,18 @@ Podsumowanie na dole tabeli: łączna liczba godzin per typ zmiany, współczynn
 
 ### Arkusz 2 — Sloty PL
 
-> Podstawa do obliczenia bonusu RPL-05: bonus 3 zł/wizytę gdy slot zaplanowany ≥ 7 dni przed wizytą i średnia ocen ≥ 4,75 (oceny z Arkusza 5).
+> Podstawa do obliczenia bonusu RPL-05: bonus 3 zł/wizytę gdy slot **utworzony przez lekarza** ≥ 7 dni przed wizytą i średnia ocen ≥ 4,75 (oceny z Arkusza 5). Jeden wiersz = jeden slot (typowo 15 min). Slot może, ale nie musi, być powiązany z wizytą z Arkusza 1.
 
 | # | Kolumna | Uwagi |
 |---|---------|-------|
 | 1 | **Email lekarza** | ✅ Identyfikator |
 | 2 | **ID lekarza** | ✅ Identyfikator |
 | 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
-| 4 | Data wizyty | Klucz łączący z Arkuszem 1 |
-| 5 | Data zaplanowania slotu przez pacjenta | System oblicza różnicę z datą wizyty; ≥ 7 dni = wizyta kwalifikuje się do bonusu |
+| 4 | ID slotu | Unikalny identyfikator slotu z systemu źródłowego |
+| 5 | Data/godzina utworzenia slotu | Kiedy lekarz opublikował slot — system oblicza różnicę z datą wizyty; ≥ 7 dni = wizyta kwalifikuje się do bonusu RPL-05 |
+| 6 | Data/godzina startu slotu | Początek okna czasowego slotu |
+| 7 | Data/godzina końca slotu | Koniec okna czasowego slotu (typowo start + 15 min) |
+| 8 | Data wizyty | *(opcjonalne)* Klucz łączący z Arkuszem 1 — jeśli slot był zajęty przez konsultację |
 
 ---
 
@@ -1038,21 +1042,31 @@ Podsumowanie na dole tabeli: łączna liczba godzin per typ zmiany, współczynn
 
 ---
 
-### Arkusz 6 — Sloty/Dyżury GLOBAL
+### Arkusz 6 — Sloty GLOBAL
 
-> Podstawa do obliczenia wynagrodzenia za dyżury lekarzy zagranicznych (RGL-06: Monthly Standby, RGL-07: Daily Standby DS1/DS2/DS3/Weekend, RGL-08: ryczałt z progiem dostępności).
+> Surowe sloty lekarzy zagranicznych — ta sama struktura co Arkusz 2. Jeden wiersz = jeden slot (typowo 15 min). System klasyfikuje każdy slot do odpowiedniego typu dyżuru (Daily Standby 1 / Daily Standby 2 / Daily Standby 3 / Weekend-Holiday Standby / Monthly Standby) na podstawie godzin i dni skonfigurowanych w ustawieniach modelu (Model F i inne). Admin **nie podaje typu dyżuru ręcznie**.
 
 | # | Kolumna | Uwagi |
 |---|---------|-------|
 | 1 | **Email lekarza** | ✅ Identyfikator |
 | 2 | **ID lekarza** | ✅ Identyfikator |
 | 3 | **Miesiąc rozliczenia** | ✅ Identyfikator (YYYY-MM) |
-| 4 | Kraj lekarza | |
-| 5 | Typ dyżuru | Monthly Standby / DS1 / DS2 / DS3 / Weekend-Holiday Standby |
-| 6 | Data dyżuru | |
-| 7 | Data/godzina początku | |
-| 8 | Data/godzina końca | |
-| 9 | Liczba konsultacji w dyżurze | Używana do RGL-07 i RGL-08 |
+| 4 | Kraj lekarza | Potrzebny do zastosowania właściwej konfiguracji modelu |
+| 5 | ID slotu | Unikalny identyfikator slotu z systemu źródłowego |
+| 6 | Data/godzina startu slotu | System określa na tej podstawie typ dyżuru (porównanie z oknami czasowymi z konfiguracji) |
+| 7 | Data/godzina końca slotu | Koniec okna czasowego slotu (typowo start + 15 min) |
+| 8 | Data wizyty | *(opcjonalne)* Klucz łączący z Arkuszem 5 — jeśli slot był zajęty przez konsultację |
+
+**Logika klasyfikacji slotów przez system:**
+
+System porównuje `Data/godzina startu slotu` z oknami czasowymi skonfigurowanymi w modelu lekarza (np. Model F — Austria):
+- Slot 07:00–12:00 w dzień roboczy → **Daily Standby 1**
+- Slot 13:00–18:00 w dzień roboczy → **Daily Standby 2**
+- Slot poza oknami DS1/DS2 w dzień roboczy → **Daily Standby 3**
+- Slot w weekend lub święto → **Weekend-Holiday Standby**
+- Slot w oknie Monthly Standby → **Monthly Standby**
+
+Sloty nieprzypisane do żadnego skonfigurowanego okna → flagowane jako "Unassigned" (widoczne w Module 3).
 
 ---
 
