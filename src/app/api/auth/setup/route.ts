@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { createSession, setSessionCookie, hashPassword } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  try {
   const { email, code, useCode, password } = await req.json();
 
   const user = await db.user.findUnique({ where: { email: email.toLowerCase() } });
@@ -47,4 +48,8 @@ export async function POST(req: NextRequest) {
   await setSessionCookie(token);
 
   return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("Setup error:", e);
+    return NextResponse.json({ error: "Błąd serwera" }, { status: 500 });
+  }
 }
