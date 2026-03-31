@@ -202,9 +202,9 @@ function parseSlots(sheet: XLSX.WorkSheet, source: "PL" | "GLOBAL", errors: Pars
       continue;
     }
 
-    const startAt = toDate(row["data/godzina_startu_slotu"]);
-    const endAt = toDate(row["data/godzina_końca_slotu"]);
-    const createdAt = toDate(row["data/godzina_utworzenia_slotu"]) ?? startAt;
+    const startAt = toDate(row["data_godzina_startu_slotu"] ?? row["data/godzina_startu_slotu"]);
+    const endAt = toDate(row["data_godzina_końca_slotu"] ?? row["data/godzina_końca_slotu"]);
+    const createdAt = toDate(row["data_godzina_utworzenia_slotu"] ?? row["data/godzina_utworzenia_slotu"]) ?? startAt;
 
     if (!startAt || !endAt || !createdAt) {
       errors.push({ sheet: sheetName, row: i + 2, message: "Invalid slot datetime" });
