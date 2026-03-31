@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { ContractModelForm } from "@/app/admin/settings/contract-model-form";
 
 interface Doctor {
   id: string;
@@ -13,10 +14,8 @@ interface Doctor {
 
 export function SettingsDoctorList({
   doctors,
-  renderForm,
 }: {
   doctors: Doctor[];
-  renderForm: (doctor: Doctor) => React.ReactNode;
 }) {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<"" | "PL" | "GLOBAL">("");
@@ -101,7 +100,7 @@ export function SettingsDoctorList({
               </div>
             </div>
             <div className="p-5">
-              {renderForm(doctor)}
+              <ContractModelForm doctor={doctor} contractModel={doctor.contractModel} />
             </div>
           </div>
         ))}

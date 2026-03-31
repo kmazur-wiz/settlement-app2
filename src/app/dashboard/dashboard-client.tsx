@@ -54,7 +54,7 @@ export function DashboardClient({
   );
 
   const chartData = useMemo(() =>
-    visibleMonths.map((month) => {
+    [...visibleMonths].reverse().map((month) => {
       const ms = settlements.filter((s) => s.month === month);
       const entry: Record<string, unknown> = { month };
       for (const st of STATUSES) entry[st] = ms.filter((s) => s.status === st).length;

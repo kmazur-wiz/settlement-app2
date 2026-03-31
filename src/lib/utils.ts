@@ -91,6 +91,24 @@ export const OCR_STATUS_COLORS: Record<string, string> = {
   UNREADABLE: "bg-yellow-100 text-yellow-800",
 };
 
+export const BREAKDOWN_LABELS: Record<string, string> = {
+  ms: "Monthly Standby",
+  ds1: "Daily Standby 1",
+  ds2: "Daily Standby 2",
+  ds3: "Daily Standby 3",
+  wh: "Weekend/Holiday Standby",
+  base: "Baza",
+  above_threshold: "Powyżej progu",
+  base_fee: "Opłata bazowa",
+  consultations: "Konsultacje",
+  prescriptions: "Recepty",
+  night_base: "Baza nocna",
+  night_above: "Powyżej progu (noc)",
+  pool_share: "Udział w poolu",
+  standby: "Dyżur",
+  rxwhizz: "Rxwhizz",
+};
+
 export function parseAmounts(json: string): Record<string, number> {
   try {
     return JSON.parse(json);

@@ -13,19 +13,33 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData();
   const file = formData.get("file") as File;
-  const month = formData.get("month") as string;
 
-  if (!file || !month) {
-    return NextResponse.json({ error: "File and month required" }, { status: 400 });
-  }
-
-  if (!month.match(/^\d{4}-\d{2}$/)) {
-    return NextResponse.json({ error: "Invalid month format (YYYY-MM)" }, { status: 400 });
+  if (!file) {
+    return NextResponse.json({ error: "File required" }, { status: 400 });
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const parsed = parseWorkbook(buffer);
-  const summary = await processImport(parsed, month, session.userId, file.name);
+
+  if (!parsed.monthConsistent) {
+    return NextResponse.json({
+      error: "Plik zawiera dane z różnych miesięcy rozliczeniowych. Sprawdź kolumnę 'miesiąc_rozliczenia' — wszystkie wiersze muszą mieć ten sam miesiąc.",
+    }, { status: 422 });
+  }
+
+  if (!parsed.detectedMonth) {
+    return NextResponse.json({
+      error: "Nie można odczytać miesiąca rozliczeniowego z pliku. Sprawdź czy kolumna 'miesiąc_rozliczenia' zawiera dane w formacie YYYY-MM.",
+    }, { status: 422 });
+  }
+
+  if (!parsed.detectedMonth.match(/^\d{4}-\d{2}$/)) {
+    return NextResponse.json({
+      error: `Nieprawidłowy format miesiąca: "${parsed.detectedMonth}". Oczekiwany format: YYYY-MM (np. 2026-01).`,
+    }, { status: 422 });
+  }
+
+  const summary = await processImport(parsed, parsed.detectedMonth, session.userId, file.name);
 
   return NextResponse.json(summary);
 }

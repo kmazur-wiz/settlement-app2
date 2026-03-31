@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   SETTLEMENT_STATUS_LABELS,
   SETTLEMENT_STATUS_COLORS,
+  BREAKDOWN_LABELS,
   formatCurrency,
   formatMonth,
   parseAmounts,
@@ -97,7 +98,7 @@ export default async function SettlementDetailPage({ params }: { params: Promise
           <div className="space-y-2">
             {Object.entries(amounts).map(([key, val]) => (
               <div key={key} className="flex justify-between text-sm">
-                <span className="text-gray-600 capitalize">{key.replace(/_/g, " ")}</span>
+                <span className="text-gray-600 capitalize">{BREAKDOWN_LABELS[key] ?? key.replace(/_/g, " ")}</span>
                 <span className="font-mono font-medium">
                   {formatCurrency(Number(val), settlement.currency)}
                 </span>

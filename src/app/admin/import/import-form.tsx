@@ -9,13 +9,6 @@ export function ImportForm() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [month, setMonth] = useState(() => {
-    const now = new Date();
-    // Safe prev-month: use getMonth() which is 0-indexed → equals 1-indexed prev month
-    const prevNum = now.getMonth() === 0 ? 12 : now.getMonth();
-    const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
-    return `${prevYear}-${String(prevNum).padStart(2, "0")}`;
-  });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
     matched: number;
@@ -43,7 +36,6 @@ export function ImportForm() {
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("month", month);
       const res = await fetch("/api/admin/import", { method: "POST", body: fd });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Import failed");
@@ -59,18 +51,6 @@ export function ImportForm() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Miesiąc rozliczeniowy
-        </label>
-        <input
-          type="month"
-          value={month}
-          onChange={(e) => setMonth(e.target.value)}
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      </div>
-
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Plik XLSX</label>
         <div

@@ -1,7 +1,6 @@
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { ContractModelForm } from "./contract-model-form";
 import { SettingsDoctorList } from "@/components/settings-doctor-list";
 
 export default async function SettingsPage() {
@@ -23,15 +22,7 @@ export default async function SettingsPage() {
         <p className="text-gray-500 mt-1">Konfiguracja modeli rozliczeniowych dla lekarzy</p>
       </div>
 
-      <SettingsDoctorList
-        doctors={doctors}
-        renderForm={(doctor) => (
-          <ContractModelForm
-            doctor={doctor}
-            contractModel={doctor.contractModel}
-          />
-        )}
-      />
+      <SettingsDoctorList doctors={doctors} />
     </div>
   );
 }

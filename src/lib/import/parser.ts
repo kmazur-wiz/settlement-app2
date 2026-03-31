@@ -93,6 +93,8 @@ export interface ParseResult {
   prescriptionsGlobal: ParsedPrescription[];
   errors: ParseError[];
   rowCounts: Record<string, number>;
+  detectedMonth: string | null;
+  monthConsistent: boolean;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -372,6 +374,20 @@ export function parseWorkbook(buffer: Buffer): ParseResult {
   const slotsGlobal = s6 ? parseSlots(s6, "GLOBAL", errors) : [];
   const prescriptionsGlobal = s7 ? parsePrescriptions(s7, "GLOBAL", errors) : [];
 
+  // Detect billing month from all row data
+  const allRowMonths = [
+    ...visitsPL.map((r) => r.month),
+    ...slotsPL.map((r) => r.month),
+    ...prescriptionsPL.map((r) => r.month),
+    ...ratings.map((r) => r.month),
+    ...visitsGlobal.map((r) => r.month),
+    ...slotsGlobal.map((r) => r.month),
+    ...prescriptionsGlobal.map((r) => r.month),
+  ].filter(Boolean);
+  const uniqueMonths = Array.from(new Set(allRowMonths));
+  const detectedMonth = uniqueMonths.length === 1 ? uniqueMonths[0] : null;
+  const monthConsistent = uniqueMonths.length <= 1;
+
   return {
     doctorsGlobal,
     visitsPL,
@@ -392,5 +408,7 @@ export function parseWorkbook(buffer: Buffer): ParseResult {
       slotsGlobal: slotsGlobal.length,
       prescriptionsGlobal: prescriptionsGlobal.length,
     },
+    detectedMonth,
+    monthConsistent,
   };
 }
