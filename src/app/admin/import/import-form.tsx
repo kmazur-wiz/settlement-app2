@@ -8,10 +8,13 @@ import { Upload } from "lucide-react";
 export function ImportForm() {
   const router = useRouter();
   const [file, setFile] = useState<File | null>(null);
+  const [dragging, setDragging] = useState(false);
   const [month, setMonth] = useState(() => {
-    const d = new Date();
-    d.setMonth(d.getMonth() - 1);
-    return d.toISOString().slice(0, 7);
+    const now = new Date();
+    // Safe prev-month: use getMonth() which is 0-indexed → equals 1-indexed prev month
+    const prevNum = now.getMonth() === 0 ? 12 : now.getMonth();
+    const prevYear = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+    return `${prevYear}-${String(prevNum).padStart(2, "0")}`;
   });
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{
@@ -20,6 +23,18 @@ export function ImportForm() {
     stored: Record<string, number>;
     errors: string[];
   } | null>(null);
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragging(false);
+    const f = e.dataTransfer.files[0];
+    if (f && (f.name.endsWith(".xlsx") || f.name.endsWith(".xls"))) {
+      setFile(f);
+    } else if (f) {
+      toast.error("Wybierz plik XLSX");
+    }
+  }
 
   async function handleImport() {
     if (!file) return;
@@ -44,34 +59,41 @@ export function ImportForm() {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Miesiąc rozliczeniowy
-          </label>
-          <input
-            type="month"
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Miesiąc rozliczeniowy
+        </label>
+        <input
+          type="month"
+          value={month}
+          onChange={(e) => setMonth(e.target.value)}
+          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Plik XLSX</label>
-        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-blue-400 hover:bg-blue-50 transition-colors">
+        <div
+          onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+          onDragEnter={(e) => { e.preventDefault(); e.stopPropagation(); setDragging(true); }}
+          onDragLeave={(e) => { e.preventDefault(); setDragging(false); }}
+          onDrop={handleDrop}
+          className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-xl transition-colors cursor-pointer
+            ${dragging ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400 hover:bg-blue-50"}`}
+          onClick={() => document.getElementById("xlsx-file-input")?.click()}
+        >
           <Upload className="w-6 h-6 text-gray-400 mb-2" />
           <span className="text-sm text-gray-500">
             {file ? file.name : "Kliknij lub przeciągnij plik XLSX"}
           </span>
           <input
+            id="xlsx-file-input"
             type="file"
             accept=".xlsx,.xls"
             className="hidden"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
-        </label>
+        </div>
       </div>
 
       <button
@@ -94,11 +116,11 @@ export function ImportForm() {
           <h3 className="font-medium text-sm">Wynik importu</h3>
           <div className="grid grid-cols-2 gap-2 text-sm">
             <div className="bg-green-50 rounded p-2">
-              <p className="text-green-700 font-medium">{result.matched}</p>
+              <p className="text-green-700 font-medium text-lg">{result.matched}</p>
               <p className="text-green-600 text-xs">dopasowanych lekarzy</p>
             </div>
             <div className={`${result.unmatched.length ? "bg-orange-50" : "bg-gray-50"} rounded p-2`}>
-              <p className={`${result.unmatched.length ? "text-orange-700" : "text-gray-400"} font-medium`}>
+              <p className={`${result.unmatched.length ? "text-orange-700" : "text-gray-400"} font-medium text-lg`}>
                 {result.unmatched.length}
               </p>
               <p className="text-xs text-gray-500">niezidentyfikowanych</p>
@@ -127,9 +149,9 @@ export function ImportForm() {
           )}
 
           {result.errors.length > 0 && (
-            <div className="bg-red-50 rounded p-3 max-h-32 overflow-y-auto">
+            <div className="bg-red-50 rounded p-3 max-h-40 overflow-y-auto">
               <p className="text-xs font-medium text-red-700 mb-1">Błędy ({result.errors.length}):</p>
-              {result.errors.slice(0, 10).map((e, i) => (
+              {result.errors.map((e, i) => (
                 <p key={i} className="text-xs text-red-600">{e}</p>
               ))}
             </div>

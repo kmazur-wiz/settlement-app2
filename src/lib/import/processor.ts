@@ -27,6 +27,36 @@ export async function processImport(
     errors: parsed.errors.map((e) => `[${e.sheet}${e.row ? `:${e.row}` : ""}] ${e.message}`),
   };
 
+  // ── Upsert GLOBAL doctors from sheet 0 ───────────────────────────────────
+  for (const d of parsed.doctorsGlobal) {
+    const existing = await db.user.findUnique({ where: { email: d.email }, include: { doctor: true } });
+    if (existing) {
+      // Update doctor record if it exists
+      if (existing.doctor) {
+        await db.doctor.update({
+          where: { userId: existing.id },
+          data: { externalId: d.externalId, country: d.country || undefined, currency: d.currency },
+        });
+      } else {
+        await db.doctor.create({
+          data: { userId: existing.id, type: "GLOBAL", externalId: d.externalId, country: d.country || undefined, currency: d.currency },
+        });
+      }
+      // Update name if provided
+      if (d.name && d.name !== d.email) {
+        await db.user.update({ where: { id: existing.id }, data: { name: d.name } });
+      }
+    } else {
+      // Create new user + doctor
+      const newUser = await db.user.create({
+        data: { email: d.email, name: d.name, role: "DOCTOR", isActive: true },
+      });
+      await db.doctor.create({
+        data: { userId: newUser.id, type: "GLOBAL", externalId: d.externalId, country: d.country || undefined, currency: d.currency },
+      });
+    }
+  }
+
   // Build email → doctor mapping
   const allEmails = new Set([
     ...parsed.visitsPL.map((v) => v.email),

@@ -74,7 +74,16 @@ export interface ParsedVisitGlobal {
   language?: string;
 }
 
+export interface ParsedDoctorGlobal {
+  email: string;
+  externalId: string;
+  name: string;
+  country: string;
+  currency: string; // EUR | GBP
+}
+
 export interface ParseResult {
+  doctorsGlobal: ParsedDoctorGlobal[];
   visitsPL: ParsedVisitPL[];
   slotsPL: ParsedSlot[];
   prescriptionsPL: ParsedPrescription[];
@@ -307,6 +316,29 @@ function parseVisitsGlobal(sheet: XLSX.WorkSheet, errors: ParseError[]): ParsedV
   return results;
 }
 
+function parseDoctorsGlobal(sheet: XLSX.WorkSheet, errors: ParseError[]): ParsedDoctorGlobal[] {
+  const rows = sheetToRows(sheet);
+  const results: ParsedDoctorGlobal[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const email = toString(row["email_lekarza"]).toLowerCase();
+    const externalId = toString(row["id_lekarza"]);
+    if (!email || !externalId) {
+      errors.push({ sheet: "0_Lekarze_GLOBAL", row: i + 2, message: "Missing email or id" });
+      continue;
+    }
+    const currency = toString(row["waluta"]).toUpperCase();
+    results.push({
+      email,
+      externalId,
+      name: toString(row["imię_i_nazwisko"]) || toString(row["imie_i_nazwisko"]) || email,
+      country: toString(row["kraj_lekarza"]) || toString(row["kraj"]) || "",
+      currency: ["EUR", "GBP", "PLN"].includes(currency) ? currency : "EUR",
+    });
+  }
+  return results;
+}
+
 // ─── Main parser ─────────────────────────────────────────────────────────────
 
 export function parseWorkbook(buffer: Buffer): ParseResult {
@@ -322,6 +354,7 @@ export function parseWorkbook(buffer: Buffer): ParseResult {
     return null;
   };
 
+  const s0 = findSheet(["lekarze_global", "0_lekarze", "lekarze"]);
   const s1 = findSheet(["wizyty_pl", "1_wizyty"]);
   const s2 = findSheet(["sloty_pl", "2_sloty"]);
   const s3 = findSheet(["recepty_pl", "3_recepty"]);
@@ -330,6 +363,7 @@ export function parseWorkbook(buffer: Buffer): ParseResult {
   const s6 = findSheet(["sloty_global", "6_sloty", "dyżury"]);
   const s7 = findSheet(["recepty_global", "7_recepty"]);
 
+  const doctorsGlobal = s0 ? parseDoctorsGlobal(s0, errors) : [];
   const visitsPL = s1 ? parseVisitsPL(s1, errors) : [];
   const slotsPL = s2 ? parseSlots(s2, "PL", errors) : [];
   const prescriptionsPL = s3 ? parsePrescriptions(s3, "PL", errors) : [];
@@ -339,6 +373,7 @@ export function parseWorkbook(buffer: Buffer): ParseResult {
   const prescriptionsGlobal = s7 ? parsePrescriptions(s7, "GLOBAL", errors) : [];
 
   return {
+    doctorsGlobal,
     visitsPL,
     slotsPL,
     prescriptionsPL,
@@ -348,6 +383,7 @@ export function parseWorkbook(buffer: Buffer): ParseResult {
     prescriptionsGlobal,
     errors,
     rowCounts: {
+      doctorsGlobal: doctorsGlobal.length,
       visitsPL: visitsPL.length,
       slotsPL: slotsPL.length,
       prescriptionsPL: prescriptionsPL.length,
